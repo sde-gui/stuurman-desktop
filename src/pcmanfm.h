@@ -45,7 +45,6 @@ void pcmanfm_unref();
 char* pcmanfm_get_profile_dir(gboolean create);
 void pcmanfm_save_config(gboolean immediate);
 
-void pcmanfm_open_folder_in_terminal(GtkWindow* parent, FmPath* dir);
 
 G_END_DECLS
 

@@ -39,8 +39,8 @@ static const char folder_menu_xml[]=
 "<popup>"
   "<placeholder name='ph1'>"
     /*"<menuitem action='NewTab'/>"
-    "<menuitem action='NewWin'/>"*/
-    "<menuitem action='Term'/>"
+    "<menuitem action='NewWin'/>"
+    "<menuitem action='Term'/>"*/
     /* "<menuitem action='Search'/>" */
   "</placeholder>"
 "</popup>";

@@ -1093,10 +1093,12 @@ static void on_open_in_new_win(GtkAction* act, gpointer user_data)
 
 static void on_open_folder_in_terminal(GtkAction* act, gpointer user_data)
 {
+#if 0
     FmDesktop* desktop = FM_DESKTOP(user_data);
 
     if(desktop->focus /*&& !fm_file_info_is_virtual(fi)*/)
         pcmanfm_open_folder_in_terminal(NULL, fm_file_info_get_path(desktop->focus->fi));
+#endif
 }
 
 static void on_fix_pos(GtkToggleAction* act, gpointer user_data)
