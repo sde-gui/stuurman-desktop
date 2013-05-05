@@ -12,16 +12,10 @@ pcmanfm_SOURCES = \
 	pcmanfm.h \
 	app-config.c \
 	app-config.h \
-	main-win.c \
-	main-win.h \
-	tab-page.c \
-	tab-page.h \
 	desktop.c \
 	desktop.h \
 	wallpaper-manager.c \
 	wallpaper-manager.h \
-	volume-manager.c \
-	volume-manager.h \
 	pref.c \
 	pref.h \
 	utils.c \

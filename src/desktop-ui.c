@@ -38,8 +38,8 @@ static const GtkActionEntry desktop_actions[]=
 static const char folder_menu_xml[]=
 "<popup>"
   "<placeholder name='ph1'>"
-    "<menuitem action='NewTab'/>"
-    "<menuitem action='NewWin'/>"
+    /*"<menuitem action='NewTab'/>"
+    "<menuitem action='NewWin'/>"*/
     "<menuitem action='Term'/>"
     /* "<menuitem action='Search'/>" */
   "</placeholder>"

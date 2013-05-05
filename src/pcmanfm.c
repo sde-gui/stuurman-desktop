@@ -38,9 +38,7 @@
 
 #include <libfm/fm-gtk.h>
 #include "app-config.h"
-#include "main-win.h"
 #include "desktop.h"
-#include "volume-manager.h"
 #include "pref.h"
 #include "pcmanfm.h"
 #include "single-inst.h"
@@ -63,7 +61,6 @@ static gboolean desktop_pref = FALSE;
 static char* set_wallpaper = NULL;
 static char* wallpaper_mode = NULL;
 static gboolean new_win = FALSE;
-static gboolean find_files = FALSE;
 static char* ipc_cwd = NULL;
 static char* window_role = NULL;
 
@@ -230,7 +227,6 @@ int main(int argc, char** argv)
     if(pcmanfm_run(gdk_screen_get_number(gdk_screen_get_default())))
     {
         window_role = NULL; /* reset it for clients callbacks */
-        fm_volume_manager_init();
         gtk_main();
         /* g_debug("main loop ended"); */
         if(desktop_running)
@@ -242,7 +238,6 @@ int main(int argc, char** argv)
             g_source_remove(save_config_idle);
             save_config_idle = 0;
         }
-        fm_volume_manager_finalize();
     }
 
     single_inst_finalize(&inst);
@@ -254,7 +249,6 @@ int main(int argc, char** argv)
 
 gboolean pcmanfm_run(gint screen_num)
 {
-    FmMainWin *win;
     gboolean ret = TRUE;
 
     if(!files_to_open)
@@ -351,81 +345,6 @@ gboolean pcmanfm_run(gint screen_num)
         }
     }
 
-    if(G_UNLIKELY(find_files))
-    {
-        /* FIXME: find files */
-    }
-    else
-    {
-        if(files_to_open)
-        {
-            char** filename;
-            FmPath* cwd = NULL;
-            GList* paths = NULL;
-            for(filename=files_to_open; *filename; ++filename)
-            {
-                FmPath* path;
-                if( **filename == '/') /* absolute path */
-                    path = fm_path_new_for_path(*filename);
-                else if(strstr(*filename, ":/") ) /* URI */
-                    path = fm_path_new_for_uri(*filename);
-                else if( strcmp(*filename, "~") == 0 ) /* special case for home dir */
-                {
-                    path = fm_path_get_home();
-                    win = fm_main_win_add_win(NULL, path);
-                    if(new_win && window_role)
-                        gtk_window_set_role(GTK_WINDOW(win), window_role);
-                    continue;
-                }
-                else /* basename */
-                {
-                    if(G_UNLIKELY(!cwd))
-                    {
-                        char* cwd_str = g_get_current_dir();
-                        cwd = fm_path_new_for_str(cwd_str);
-                        g_free(cwd_str);
-                    }
-                    path = fm_path_new_relative(cwd, *filename);
-                }
-                paths = g_list_append(paths, path);
-            }
-            if(cwd)
-                fm_path_unref(cwd);
-            fm_launch_paths_simple(NULL, NULL, paths, pcmanfm_open_folder, NULL);
-            g_list_foreach(paths, (GFunc)fm_path_unref, NULL);
-            g_list_free(paths);
-            ret = (n_pcmanfm_ref >= 1); /* if there is opened window, return true to run the main loop. */
-
-            g_strfreev(files_to_open);
-            files_to_open = NULL;
-        }
-        else
-        {
-            static gboolean first_run = TRUE;
-            if(first_run && daemon_mode)
-            {
-                /* If the function is called the first time and we're in daemon mode,
-               * don't open any folder.
-               * Checking if pcmanfm_run() is called the first time is needed to fix
-               * #3397444 - pcmanfm dont show window in daemon mode if i call 'pcmanfm' */
-            }
-            else
-            {
-                /* If we're not in daemon mode, or pcmanfm_run() is called because another
-               * instance send signal to us, open cwd by default. */
-                FmPath* path;
-                char* cwd = ipc_cwd ? ipc_cwd : g_get_current_dir();
-                path = fm_path_new_for_path(cwd);
-                win = fm_main_win_add_win(NULL, path);
-                if(new_win && window_role)
-                    gtk_window_set_role(GTK_WINDOW(win), window_role);
-                fm_path_unref(path);
-                g_free(cwd);
-                ipc_cwd = NULL;
-            }
-            first_run = FALSE;
-        }
-    }
     return ret;
 }
 
@@ -445,56 +364,6 @@ void pcmanfm_unref()
     /* g_debug("unref: %d, daemon_mode=%d, desktop_running=%d", n_pcmanfm_ref, daemon_mode, desktop_running); */
     if( 0 == n_pcmanfm_ref && !daemon_mode && !desktop_running )
         gtk_main_quit();
-}
-
-static void move_window_to_desktop(FmMainWin* win, FmDesktop* desktop)
-{
-    GdkScreen* screen = gtk_widget_get_screen(GTK_WIDGET(desktop));
-    Atom atom;
-    char* atom_name = "_NET_WM_DESKTOP";
-    XClientMessageEvent xev;
-
-    gtk_window_set_screen(GTK_WINDOW(win), screen);
-    if(!XInternAtoms(gdk_x11_get_default_xdisplay(), &atom_name, 1, False, &atom))
-    {
-        /* g_debug("cannot get Atom for _NET_WM_DESKTOP"); */
-        return;
-    }
-    xev.type = ClientMessage;
-    xev.window = GDK_WINDOW_XID(gtk_widget_get_window(GTK_WIDGET(win)));
-    xev.message_type = atom;
-    xev.format = 32;
-    xev.data.l[0] = desktop->cur_desktop;
-    xev.data.l[1] = 0;
-    xev.data.l[2] = 0;
-    xev.data.l[3] = 0;
-    xev.data.l[4] = 0;
-    /* g_debug("moving window to current desktop"); */
-    XSendEvent(gdk_x11_get_default_xdisplay(), GDK_ROOT_WINDOW(), False,
-               (SubstructureNotifyMask | SubstructureRedirectMask),
-               (XEvent *) &xev);
-}
-
-gboolean pcmanfm_open_folder(GAppLaunchContext* ctx, GList* folder_infos, gpointer user_data, GError** err)
-{
-    GList* l = folder_infos;
-    if(new_win)
-    {
-        FmMainWin *win = fm_main_win_add_win(NULL,
-                                fm_file_info_get_path((FmFileInfo*)l->data));
-        if(window_role)
-            gtk_window_set_role(GTK_WINDOW(win), window_role);
-        new_win = FALSE;
-        l = l->next;
-    }
-    for(; l; l=l->next)
-    {
-        FmFileInfo* fi = (FmFileInfo*)l->data;
-        fm_main_win_open_in_last_active(fm_file_info_get_path(fi));
-    }
-    if(user_data && FM_IS_DESKTOP(user_data))
-        move_window_to_desktop(fm_main_win_get_last_active(), user_data);
-    return TRUE;
 }
 
 static gboolean on_save_config_idle(gpointer user_data)

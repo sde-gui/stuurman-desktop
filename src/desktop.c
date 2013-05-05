@@ -40,7 +40,6 @@
 #include <cairo-xlib.h>
 
 #include "pref.h"
-#include "main-win.h"
 
 #include "gseal-gtk-compat.h"
 
@@ -118,8 +117,8 @@ enum
 };
 
 /* popup menu callbacks */
-static void on_open_in_new_tab(GtkAction* act, gpointer user_data);
 static void on_open_in_new_win(GtkAction* act, gpointer user_data);
+static void on_open_in_new_tab(GtkAction* act, gpointer user_data);
 static void on_open_folder_in_terminal(GtkAction* act, gpointer user_data);
 
 static void on_fix_pos(GtkToggleAction* act, gpointer user_data);
@@ -1077,19 +1076,19 @@ static void fm_desktop_update_item_popup(FmFolderView* fv, GtkWindow* window,
 
 /* folder options work only with single folder - see above */
 static void on_open_in_new_tab(GtkAction* act, gpointer user_data)
-{
+{/*
     FmDesktop* desktop = FM_DESKTOP(user_data);
 
     if(desktop->focus)
-        fm_main_win_open_in_last_active(fm_file_info_get_path(desktop->focus->fi));
+        fm_main_win_open_in_last_active(fm_file_info_get_path(desktop->focus->fi));*/
 }
 
 static void on_open_in_new_win(GtkAction* act, gpointer user_data)
 {
-    FmDesktop* desktop = FM_DESKTOP(user_data);
+/*    FmDesktop* desktop = FM_DESKTOP(user_data);
 
     if(desktop->focus)
-        fm_main_win_add_win(NULL, fm_file_info_get_path(desktop->focus->fi));
+        fm_main_win_add_win(NULL, fm_file_info_get_path(desktop->focus->fi));*/
 }
 
 static void on_open_folder_in_terminal(GtkAction* act, gpointer user_data)
@@ -1700,7 +1699,8 @@ static gboolean on_button_release(GtkWidget* w, GdkEventButton* evt)
         if(clicked_item)
         {
             /* left single click */
-            fm_launch_file_simple(GTK_WINDOW(w), NULL, clicked_item->fi, pcmanfm_open_folder, w);
+            //fm_launch_file_simple(GTK_WINDOW(w), NULL, clicked_item->fi, pcmanfm_open_folder, w);
+            fm_launch_file_simple(GTK_WINDOW(w), NULL, clicked_item->fi, NULL, w);
             return TRUE;
         }
     }
@@ -2558,8 +2558,8 @@ static void _get_custom_menu_callbacks(FmFolderView* fv,
 {
     if(popup)
         *popup = fm_desktop_update_item_popup;
-    if(launch)
-        *launch = pcmanfm_open_folder;
+/*    if(launch)
+        *launch = pcmanfm_open_folder;*/
 }
 
 /* init for FmFolderView interface implementation */

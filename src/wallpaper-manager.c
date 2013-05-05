@@ -39,7 +39,6 @@
 #include <cairo-xlib.h>
 
 #include "pref.h"
-#include "main-win.h"
 
 #include "gseal-gtk-compat.h"
 

@@ -40,7 +40,7 @@ void pcmanfm_ref();
  */
 void pcmanfm_unref();
 
-gboolean pcmanfm_open_folder(GAppLaunchContext* ctx, GList* folder_infos, gpointer user_data, GError** err);
+//gboolean pcmanfm_open_folder(GAppLaunchContext* ctx, GList* folder_infos, gpointer user_data, GError** err);
 
 char* pcmanfm_get_profile_dir(gboolean create);
 void pcmanfm_save_config(gboolean immediate);
