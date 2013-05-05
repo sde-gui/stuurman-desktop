@@ -45,6 +45,7 @@ void pcmanfm_unref();
 char* pcmanfm_get_profile_dir(gboolean create);
 void pcmanfm_save_config(gboolean immediate);
 
+const char * config_app_name(void);
 
 G_END_DECLS
 
