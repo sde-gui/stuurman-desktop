@@ -2140,7 +2140,16 @@ static void on_drag_data_received (GtkWidget *dest_widget,
     int offset_x, offset_y;
 
     if(info != FM_DND_DEST_DESKTOP_ITEM)
+    {
+        //gtk_drag_finish(drag_context, FALSE, FALSE, time);
         return;
+    }
+
+    if (drag_context->action != GDK_ACTION_MOVE)
+    {
+        //gtk_drag_finish(drag_context, FALSE, FALSE, time);
+        return;
+    }
 
     /* desktop items are being dragged */
     items = get_selected_items(desktop, NULL);
@@ -2158,6 +2167,9 @@ static void on_drag_data_received (GtkWidget *dest_widget,
     save_item_pos(desktop);
 
     queue_layout_items(desktop);
+
+    drag_context->action = GDK_ACTION_PRIVATE;
+    gtk_drag_finish(drag_context, TRUE, FALSE, time);
 }
 
 static void on_dnd_src_data_get(FmDndSrc* ds, FmDesktop* desktop)
