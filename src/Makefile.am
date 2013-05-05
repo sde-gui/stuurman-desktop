@@ -5,9 +5,9 @@ AM_CPPFLAGS = \
 	-DPACKAGE_UI_DIR=\""$(datadir)/pcmanfm/ui"\" \
 	-DPACKAGE_LOCALE_DIR=\""$(prefix)/$(DATADIRNAME)/locale"\"
 
-bin_PROGRAMS = pcmanfm
+bin_PROGRAMS = pcmanfm-desktop
 
-pcmanfm_SOURCES = \
+pcmanfm_desktop_SOURCES = \
 	pcmanfm.c \
 	pcmanfm.h \
 	app-config.c \
@@ -30,7 +30,7 @@ EXTRA_DIST= \
 	desktop-ui.c \
 	$(NULL)
 
-pcmanfm_CFLAGS = \
+pcmanfm_desktop_CFLAGS = \
 	$(XLIB_CFLAGS) \
 	$(FM_CFLAGS) \
 	$(G_CAST_CHECKS) \
@@ -38,7 +38,7 @@ pcmanfm_CFLAGS = \
 	-Werror-implicit-function-declaration \
 	$(NULL)
 
-pcmanfm_LDADD = \
+pcmanfm_desktop_LDADD = \
 	$(XLIB_LIBS) \
 	$(FM_LIBS) \
 	$(NULL)
