@@ -29,6 +29,8 @@
 #include "app-config.h"
 #include "pcmanfm.h"
 
+#define APP_CONFIG_NAME "desktop.conf"
+
 static void fm_app_config_finalize              (GObject *object);
 
 G_DEFINE_TYPE(FmAppConfig, fm_app_config, FM_CONFIG_TYPE);
@@ -192,7 +194,7 @@ void fm_app_config_load_from_profile(FmAppConfig* cfg, const char* name)
     dirs = g_get_system_config_dirs();
     for(dir=dirs;*dir;++dir)
     {
-        path = g_build_filename(*dir, config_app_name(), name, "pcmanfm.conf", NULL);
+        path = g_build_filename(*dir, config_app_name(), name, APP_CONFIG_NAME, NULL);
         if(g_key_file_load_from_file(kf, path, 0, NULL))
             fm_app_config_load_from_key_file(cfg, kf);
         g_free(path);
@@ -202,7 +204,7 @@ void fm_app_config_load_from_profile(FmAppConfig* cfg, const char* name)
 
     /* For backward compatibility, try to load old config file and
      * then migrate to new location */
-    path = g_build_filename(g_get_user_config_dir(), config_app_name(), name, "pcmanfm.conf", NULL);
+    path = g_build_filename(g_get_user_config_dir(), config_app_name(), name, APP_CONFIG_NAME, NULL);
     if(g_key_file_load_from_file(kf, path, 0, NULL))
         fm_app_config_load_from_key_file(cfg, kf);
     g_free(path);
@@ -257,7 +259,7 @@ void fm_app_config_save_profile(FmAppConfig* cfg, const char* name)
         g_string_append_printf(buf, "sort_type=%d\n", cfg->sort_type);
         g_string_append_printf(buf, "sort_by=%d\n", cfg->sort_by);
 
-        path = g_build_filename(dir_path, "pcmanfm.conf", NULL);
+        path = g_build_filename(dir_path, APP_CONFIG_NAME, NULL);
         g_file_set_contents(path, buf->str, buf->len, NULL);
         g_string_free(buf, TRUE);
         g_free(path);
