@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Icon=user-desktop
+_Name=Stuurman Desktop Preferences
+_Comment=Change desktop wallpapers and behavior of Stuurman desktop manager
+Categories=Settings;GTK;DesktopSettings;
+Exec=stuurman-desktop --desktop-pref
+StartupNotify=true
+Terminal=false
+#NotShowIn=GNOME;XFCE;KDE;

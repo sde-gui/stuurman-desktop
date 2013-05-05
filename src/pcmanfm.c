@@ -188,7 +188,7 @@ int main(int argc, char** argv)
     }
 
     /* ensure that there is only one instance of pcmanfm-desktop. */
-    inst.prog_name = "pcmanfm-desktop";
+    inst.prog_name = "stuurman-desktop";
     inst.cb = single_inst_cb;
     inst.opt_entries = opt_entries + 3;
     inst.screen_num = gdk_x11_get_default_screen();
@@ -391,5 +391,5 @@ char* pcmanfm_get_profile_dir(gboolean create)
 
 const char * config_app_name(void)
 {
-    return "pcmanfm-desktop";
+    return "stuurman-desktop";
 }

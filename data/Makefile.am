@@ -2,17 +2,16 @@ NULL=
 
 SUBDIRS=ui
 
-man_MANS=pcmanfm.1
+man_MANS=
 
 desktopdir=$(datadir)/applications
 desktop_in_files= \
-	pcmanfm.desktop.in \
-	pcmanfm-desktop-pref.desktop.in \
+	stuurman-desktop-pref.desktop.in \
 	$(NULL)
 desktop_DATA = $(desktop_in_files:.desktop.in=.desktop)
 @INTLTOOL_DESKTOP_RULE@
 
-defconfdir=$(sysconfdir)/xdg/pcmanfm-desktop/default
+defconfdir=$(sysconfdir)/xdg/stuurman-desktop/default
 defconf_DATA = \
 	$(NULL)
 

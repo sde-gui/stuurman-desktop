@@ -109,7 +109,10 @@ void wallpaper_manager_update_background(FmDesktop* desktop, int is_it)
                 wallpaper = app_config->wallpapers[cur_desktop];
             else
                 wallpaper = NULL;
-            g_free(app_config->wallpaper); /* update to current desktop */
+            if (app_config->wallpaper)
+            {
+                g_free(app_config->wallpaper); /* update to current desktop */
+            }
             app_config->wallpaper = g_strdup(wallpaper);
         }
     }

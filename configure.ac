@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
-AC_INIT([pcmanfm], [1.1.0], [http://pcmanfm.sf.net/])
+AC_INIT([stuurman-desktop], [1.1.0], [http://])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
 AC_CONFIG_HEADERS([config.h])
@@ -105,7 +105,7 @@ PKG_CHECK_MODULES(FM, [$fm_modules])
 AC_SUBST(FM_CFLAGS)
 AC_SUBST(FM_LIBS)
 
-GETTEXT_PACKAGE=pcmanfm
+GETTEXT_PACKAGE=stuurman-desktop
 AC_SUBST(GETTEXT_PACKAGE)
 
 # Generate po/LINGUAS on the fly rather than relying on translators
@@ -132,11 +132,9 @@ AC_CONFIG_FILES([
     src/Makefile
     po/Makefile.in
     data/Makefile
-    data/pcmanfm.1
     data/ui/Makefile
     data/ui/about.glade
 ])
 
 AC_OUTPUT
 
-echo Ready to make pcmanfm

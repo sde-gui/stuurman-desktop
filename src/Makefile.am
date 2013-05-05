@@ -1,13 +1,13 @@
 NULL=
 
 AM_CPPFLAGS = \
-	-DPACKAGE_DATA_DIR=\""$(datadir)/pcmanfm"\" \
-	-DPACKAGE_UI_DIR=\""$(datadir)/pcmanfm/ui"\" \
+	-DPACKAGE_DATA_DIR=\""$(datadir)/stuurman-desktop"\" \
+	-DPACKAGE_UI_DIR=\""$(datadir)/stuurman-desktop/ui"\" \
 	-DPACKAGE_LOCALE_DIR=\""$(prefix)/$(DATADIRNAME)/locale"\"
 
-bin_PROGRAMS = pcmanfm-desktop
+bin_PROGRAMS = stuurman-desktop
 
-pcmanfm_desktop_SOURCES = \
+stuurman_desktop_SOURCES = \
 	pcmanfm.c \
 	pcmanfm.h \
 	app-config.c \
@@ -30,7 +30,7 @@ EXTRA_DIST= \
 	desktop-ui.c \
 	$(NULL)
 
-pcmanfm_desktop_CFLAGS = \
+stuurman_desktop_CFLAGS = \
 	$(XLIB_CFLAGS) \
 	$(FM_CFLAGS) \
 	$(G_CAST_CHECKS) \
@@ -38,7 +38,7 @@ pcmanfm_desktop_CFLAGS = \
 	-Werror-implicit-function-declaration \
 	$(NULL)
 
-pcmanfm_desktop_LDADD = \
+stuurman_desktop_LDADD = \
 	$(XLIB_LIBS) \
 	$(FM_LIBS) \
 	$(NULL)
