@@ -1564,6 +1564,8 @@ static void on_size_request(GtkWidget* w, GtkRequisition* req)
 
 static gboolean on_button_press(GtkWidget* w, GdkEventButton* evt)
 {
+    g_print("on_button_press\n");
+
     FmDesktop* self = (FmDesktop*)w;
     FmDesktopItem *item = NULL, *clicked_item = NULL;
     GtkTreeIter it;
@@ -1672,6 +1674,8 @@ static gboolean on_button_press(GtkWidget* w, GdkEventButton* evt)
 
 static gboolean on_button_release(GtkWidget* w, GdkEventButton* evt)
 {
+    g_print("on_button_release\n");
+
     FmDesktop* self = (FmDesktop*)w;
     GtkTreeIter it;
     FmDesktopItem* clicked_item = hit_test(self, &it, evt->x, evt->y);
@@ -1694,7 +1698,7 @@ static gboolean on_button_release(GtkWidget* w, GdkEventButton* evt)
     }
     else if(self->dragging)
     {
-        self->dragging = FALSE;
+        /*self->dragging = FALSE;*/
     }
     else if(fm_config->single_click && evt->button == 1)
     {
@@ -1716,6 +1720,8 @@ static gboolean on_button_release(GtkWidget* w, GdkEventButton* evt)
 
 static gboolean on_single_click_timeout(gpointer user_data)
 {
+    g_print("on_single_click_timeout\n");
+
     FmDesktop* self = (FmDesktop*)user_data;
     GtkWidget* w = (GtkWidget*)self;
     GdkEventButton evt;
@@ -1745,8 +1751,13 @@ static gboolean on_single_click_timeout(gpointer user_data)
 static gboolean on_motion_notify(GtkWidget* w, GdkEventMotion* evt)
 {
     FmDesktop* self = (FmDesktop*)w;
+
+    g_print("self->button_pressed = %d, x = %d, y = %d\n", (int)self->button_pressed, (int)evt->x, (int)evt->y);
+
     if(! self->button_pressed)
     {
+        self->dragging = FALSE;
+
         if(fm_config->single_click)
         {
             GtkTreeIter it;
@@ -1786,6 +1797,7 @@ static gboolean on_motion_notify(GtkWidget* w, GdkEventMotion* evt)
     {
         update_rubberbanding(self, evt->x, evt->y);
     }
+/*
     else
     {
         if (gtk_drag_check_threshold(w,
@@ -1804,12 +1816,14 @@ static gboolean on_motion_notify(GtkWidget* w, GdkEventMotion* evt)
             }
         }
     }
-
+*/
     return TRUE;
 }
 
 static gboolean on_leave_notify(GtkWidget* w, GdkEventCrossing *evt)
 {
+    g_print("on_leave_notify\n");
+
     FmDesktop* self = (FmDesktop*)w;
     if(self->single_click_timeout_handler)
     {
@@ -1989,6 +2003,29 @@ static gboolean on_focus_out(GtkWidget* w, GdkEventFocus* evt)
 }
 
 /* ---- Drag & Drop support ---- */
+
+static void on_drag_begin(GtkWidget * widget, GdkDragContext * drag_context)
+{
+    g_print("on_drag_begin\n");
+    FmDesktop* desktop = FM_DESKTOP(widget);
+    desktop->dragging = TRUE;
+}
+
+static void on_drag_end(GtkWidget * widget, GdkDragContext * drag_context)
+{
+    g_print("on_drag_end\n");
+    FmDesktop* desktop = FM_DESKTOP(widget);
+    desktop->dragging = FALSE;
+}
+/*
+static gboolean on_drag_failed(GtkWidget * widget, GdkDragContext * drag_context, GtkDragResult result)
+{
+    g_print("on_drag_failed\n");
+    FmDesktop* desktop = FM_DESKTOP(widget);
+    desktop->dragging = FALSE;
+    return FALSE;
+}
+*/
 static gboolean on_drag_motion (GtkWidget *dest_widget,
                                 GdkDragContext *drag_context,
                                 gint x, gint y, guint time)
@@ -1999,8 +2036,13 @@ static gboolean on_drag_motion (GtkWidget *dest_widget,
     FmDesktopItem* item;
     GtkTreeIter it;
 
+    g_print("on_drag_motion, self->dragging = %d\n", (int)desktop->dragging);
+
     /* check if we're dragging over an item */
     item = hit_test(desktop, &it, x, y);
+
+    if (desktop->dragging && item && item->is_selected)
+        item = NULL;
 
     /* handle moving desktop items */
     if(!item)
@@ -2044,6 +2086,7 @@ static void on_drag_leave (GtkWidget *dest_widget,
                            GdkDragContext *drag_context,
                            guint time)
 {
+    g_print("on_drag_leave\n");
     FmDesktop* desktop = FM_DESKTOP(dest_widget);
 
     if(desktop->drop_hilight)
@@ -2058,12 +2101,19 @@ static gboolean on_drag_drop (GtkWidget *dest_widget,
                               GdkDragContext *drag_context,
                               gint x, gint y, guint time)
 {
+    g_print("on_drag_drop\n");
+
     FmDesktop* desktop = FM_DESKTOP(dest_widget);
     FmDesktopItem* item;
     GtkTreeIter it;
 
     /* check if we're dropping on an item */
     item = hit_test(desktop, &it, x, y);
+
+    if (desktop->dragging && item && item->is_selected)
+        item = NULL;
+
+    g_print("item = %u\n", (unsigned)item);
 
     /* handle moving desktop items */
     if(!item)
@@ -2084,6 +2134,7 @@ static void on_drag_data_received (GtkWidget *dest_widget,
                                    gint x, gint y, GtkSelectionData *sel_data,
                                    guint info, guint time)
 {
+    g_print("on_drag_data_received\n");
     FmDesktop* desktop = FM_DESKTOP(dest_widget);
     GList *items, *l;
     int offset_x, offset_y;
@@ -2111,6 +2162,7 @@ static void on_drag_data_received (GtkWidget *dest_widget,
 
 static void on_dnd_src_data_get(FmDndSrc* ds, FmDesktop* desktop)
 {
+    g_print("on_dnd_src_data_get\n");
     FmFileInfoList* files = _dup_selected_files(FM_FOLDER_VIEW(desktop));
     if(files)
     {
@@ -2356,6 +2408,9 @@ static void fm_desktop_class_init(FmDesktopClass *klass)
     widget_class->drag_data_received = on_drag_data_received;
     widget_class->drag_leave = on_drag_leave;
     /* widget_class->drag_data_get = on_drag_data_get; */
+
+    widget_class->drag_begin = on_drag_begin;
+    widget_class->drag_end = on_drag_end;
 
     if(XInternAtoms(gdk_x11_get_default_xdisplay(), atom_names,
                     G_N_ELEMENTS(atom_names), False, atoms))
