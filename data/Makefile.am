@@ -12,9 +12,8 @@ desktop_in_files= \
 desktop_DATA = $(desktop_in_files:.desktop.in=.desktop)
 @INTLTOOL_DESKTOP_RULE@
 
-defconfdir=$(sysconfdir)/xdg/pcmanfm/default
+defconfdir=$(sysconfdir)/xdg/pcmanfm-desktop/default
 defconf_DATA = \
-	pcmanfm.conf \
 	$(NULL)
 
 EXTRA_DIST= \
