@@ -57,12 +57,6 @@ struct _FmAppConfig
 {
     FmConfig parent;
 
-    /* default values for folder views */
-    guint view_mode;
-    gboolean show_hidden;
-    GtkSortType sort_type;
-    int sort_by;
-
     /* desktop manager */
     /* FIXME: make these setting per FmDesktop */
     /* emit "changed::wallpaper" */

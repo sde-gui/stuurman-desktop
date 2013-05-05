@@ -74,11 +74,6 @@ static void fm_app_config_init(FmAppConfig *cfg)
 
     cfg->desktop_fg.red = cfg->desktop_fg.green = cfg->desktop_fg.blue = 65535;
 
-    cfg->view_mode = FM_FV_ICON_VIEW;
-    cfg->show_hidden = FALSE;
-    cfg->sort_type = GTK_SORT_ASCENDING;
-    cfg->sort_by = COL_FILE_NAME;
-
     cfg->desktop_sort_type = GTK_SORT_ASCENDING;
     cfg->desktop_sort_by = COL_FILE_MTIME;
 
@@ -163,22 +158,6 @@ void fm_app_config_load_from_key_file(FmAppConfig* cfg, GKeyFile* kf)
     if(fm_key_file_get_int(kf, "desktop", "sort_by", &tmp_int) &&
        FM_FOLDER_MODEL_COL_IS_VALID((guint)tmp_int))
         cfg->desktop_sort_by = tmp_int;
-
-    /* default values for folder views */
-    if(!fm_key_file_get_int(kf, "ui", "view_mode", &tmp_int) ||
-       !FM_STANDARD_VIEW_MODE_IS_VALID(tmp_int))
-        cfg->view_mode = FM_FV_ICON_VIEW;
-    else
-        cfg->view_mode = tmp_int;
-    fm_key_file_get_bool(kf, "ui", "show_hidden", &cfg->show_hidden);
-    if(fm_key_file_get_int(kf, "ui", "sort_type", &tmp_int) &&
-       tmp_int == GTK_SORT_DESCENDING)
-        cfg->sort_type = GTK_SORT_DESCENDING;
-    else
-        cfg->sort_type = GTK_SORT_ASCENDING;
-    fm_key_file_get_int(kf, "ui", "sort_by", &cfg->sort_by);
-    if(!FM_FOLDER_MODEL_COL_IS_VALID(cfg->sort_by))
-        cfg->sort_by = COL_FILE_NAME;
 }
 
 void fm_app_config_load_from_profile(FmAppConfig* cfg, const char* name)
@@ -252,12 +231,6 @@ void fm_app_config_save_profile(FmAppConfig* cfg, const char* name)
         g_string_append_printf(buf, "show_wm_menu=%d\n", cfg->show_wm_menu);
         g_string_append_printf(buf, "sort_type=%d\n", cfg->desktop_sort_type);
         g_string_append_printf(buf, "sort_by=%d\n", cfg->desktop_sort_by);
-
-        g_string_append(buf, "\n[ui]\n");
-        g_string_append_printf(buf, "view_mode=%d\n", cfg->view_mode);
-        g_string_append_printf(buf, "show_hidden=%d\n", cfg->show_hidden);
-        g_string_append_printf(buf, "sort_type=%d\n", cfg->sort_type);
-        g_string_append_printf(buf, "sort_by=%d\n", cfg->sort_by);
 
         path = g_build_filename(dir_path, APP_CONFIG_NAME, NULL);
         g_file_set_contents(path, buf->str, buf->len, NULL);
