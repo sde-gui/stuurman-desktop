@@ -156,7 +156,7 @@ int main(int argc, char** argv)
     /* ensure that there is only one instance of pcmanfm-desktop. */
     inst.prog_name = "stuurman-desktop";
     inst.cb = single_inst_cb;
-    inst.opt_entries = opt_entries + 3;
+    inst.opt_entries = opt_entries;
     inst.screen_num = gdk_x11_get_default_screen();
     switch(single_inst_init(&inst))
     {
