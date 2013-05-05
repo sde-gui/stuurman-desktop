@@ -184,13 +184,9 @@ void fm_app_config_load_from_profile(FmAppConfig* cfg, const char* name)
     const gchar * const *dirs, * const *dir;
     char *path;
     GKeyFile* kf = g_key_file_new();
-    const char* old_name = name;
 
     if(!name || !*name) /* if profile name is not provided, use 'default' */
-    {
         name = "default";
-        old_name = "pcmanfm"; /* for compatibility with old versions. */
-    }
 
     /* load system-wide settings */
     dirs = g_get_system_config_dirs();
@@ -206,31 +202,9 @@ void fm_app_config_load_from_profile(FmAppConfig* cfg, const char* name)
 
     /* For backward compatibility, try to load old config file and
      * then migrate to new location */
-    path = g_strconcat(g_get_user_config_dir(), "/", config_app_name(), "/", old_name, ".conf", NULL);
-    if(G_UNLIKELY(g_key_file_load_from_file(kf, path, 0, NULL)))
-    {
-        char* new_dir;
-        /* old config file is found, migrate to new profile format */
+    path = g_build_filename(g_get_user_config_dir(), config_app_name(), name, "pcmanfm.conf", NULL);
+    if(g_key_file_load_from_file(kf, path, 0, NULL))
         fm_app_config_load_from_key_file(cfg, kf);
-
-        /* create the profile dir */
-        new_dir = g_build_filename(g_get_user_config_dir(), config_app_name(), name, NULL);
-        if(g_mkdir_with_parents(new_dir, 0700) == 0)
-        {
-            /* move the old config file to new location */
-            char* new_path = g_build_filename(new_dir, "pcmanfm.conf", NULL);
-            rename(path, new_path);
-            g_free(new_path);
-        }
-        g_free(new_dir);
-    }
-    else
-    {
-        g_free(path);
-        path = g_build_filename(g_get_user_config_dir(), config_app_name(), name, "pcmanfm.conf", NULL);
-        if(g_key_file_load_from_file(kf, path, 0, NULL))
-            fm_app_config_load_from_key_file(cfg, kf);
-    }
     g_free(path);
 
     g_key_file_free(kf);
