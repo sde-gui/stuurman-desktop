@@ -44,23 +44,16 @@
 #include "single-inst.h"
 
 static int signal_pipe[2] = {-1, -1};
-static gboolean daemon_mode = FALSE;
 static guint save_config_idle = 0;
 
-static char** files_to_open = NULL;
-static int n_files_to_open = 0;
 static char* profile = NULL;
-static gboolean no_desktop = FALSE;
-static gboolean show_desktop = FALSE;
+static gboolean show_desktop = TRUE;
 static gboolean desktop_off = FALSE;
 static gboolean desktop_running = FALSE;
 static gboolean one_screen = FALSE;
-/* static gboolean new_tab = FALSE; */
-static gint show_pref = -1;
 static gboolean desktop_pref = FALSE;
 static char* set_wallpaper = NULL;
 static char* wallpaper_mode = NULL;
-static gboolean new_win = FALSE;
 static char* ipc_cwd = NULL;
 static char* window_role = NULL;
 
@@ -70,22 +63,16 @@ static GOptionEntry opt_entries[] =
 {
     /* options only acceptable by first pcmanfm instance. These options are not passed through IPC */
     { "profile", 'p', 0, G_OPTION_ARG_STRING, &profile, N_("Name of configuration profile"), N_("PROFILE") },
-    { "daemon-mode", 'd', 0, G_OPTION_ARG_NONE, &daemon_mode, N_("Run PCManFM as a daemon"), NULL },
-    { "no-desktop", '\0', 0, G_OPTION_ARG_NONE, &no_desktop, N_("No function. Just to be compatible with nautilus"), NULL },
 
     /* options that are acceptable for every instance of pcmanfm and will be passed through IPC. */
-    { "desktop", '\0', 0, G_OPTION_ARG_NONE, &show_desktop, N_("Launch desktop manager"), NULL },
+    /*{ "desktop", '\0', 0, G_OPTION_ARG_NONE, &show_desktop, N_("Launch desktop manager"), NULL },*/
     { "desktop-off", '\0', 0, G_OPTION_ARG_NONE, &desktop_off, N_("Turn off desktop manager if it's running"), NULL },
     { "desktop-pref", '\0', 0, G_OPTION_ARG_NONE, &desktop_pref, N_("Open desktop preference dialog"), NULL },
     { "one-screen", '\0', 0, G_OPTION_ARG_NONE, &one_screen, N_("Use --desktop option only for one screen"), NULL },
     { "set-wallpaper", 'w', 0, G_OPTION_ARG_FILENAME, &set_wallpaper, N_("Set desktop wallpaper from image FILE"), N_("FILE") },
                     /* don't translate list of modes in description, please */
     { "wallpaper-mode", '\0', 0, G_OPTION_ARG_STRING, &wallpaper_mode, N_("Set mode of desktop wallpaper. MODE=(color|stretch|fit|center|tile)"), N_("MODE") },
-    { "show-pref", '\0', 0, G_OPTION_ARG_INT, &show_pref, N_("Open Preferences dialog on the page N"), N_("N") },
-    { "new-win", 'n', 0, G_OPTION_ARG_NONE, &new_win, N_("Open new window"), NULL },
-    /* { "find-files", 'f', 0, G_OPTION_ARG_NONE, &find_files, N_("Open Find Files utility"), NULL }, */
     { "role", '\0', 0, G_OPTION_ARG_STRING, &window_role, N_("Window role for usage by window manager"), N_("ROLE") },
-    {G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &files_to_open, NULL, N_("[FILE1, FILE2,...]")},
     { NULL }
 };
 
@@ -142,27 +129,6 @@ static void single_inst_cb(const char* cwd, int screen_num)
     g_free(ipc_cwd);
     ipc_cwd = g_strdup(cwd);
 
-    if(files_to_open)
-    {
-        int i;
-        n_files_to_open = g_strv_length(files_to_open);
-        /* canonicalize filename if needed. */
-        for(i = 0; i < n_files_to_open; ++i)
-        {
-            char* file = files_to_open[i];
-            char* scheme = g_uri_parse_scheme(file);
-            g_debug("file: %s", file);
-            if(scheme) /* a valid URI */
-            {
-                g_free(scheme);
-            }
-            else /* a file path */
-            {
-                files_to_open[i] = fm_canonicalize_filename(file, cwd);
-                g_free(file);
-            }
-        }
-    }
     pcmanfm_run(screen_num);
     window_role = NULL; /* reset it for clients callbacks */
 }
@@ -251,91 +217,88 @@ gboolean pcmanfm_run(gint screen_num)
 {
     gboolean ret = TRUE;
 
-    if(!files_to_open)
+    if(desktop_pref)
     {
-        /* Launch desktop manager */
-        if(show_desktop)
+        /* FIXME: pass screen number from client */
+        fm_desktop_preference(NULL, GTK_WINDOW(fm_desktop_get(0, 0)));
+        desktop_pref = FALSE;
+        return TRUE;
+    }
+
+    if(show_desktop)
+    {
+        if(!desktop_running)
         {
-            if(!desktop_running)
-            {
-                fm_desktop_manager_init(one_screen ? screen_num : -1);
-                desktop_running = TRUE;
-                one_screen = FALSE;
-            }
-            show_desktop = FALSE;
-            return TRUE;
+            fm_desktop_manager_init(one_screen ? screen_num : -1);
+            desktop_running = TRUE;
+            one_screen = FALSE;
         }
-        else if(desktop_off)
+        show_desktop = FALSE;
+        return TRUE;
+    }
+    else if(desktop_off)
+    {
+        if(desktop_running)
         {
-            if(desktop_running)
+            desktop_running = FALSE;
+            fm_desktop_manager_finalize();
+        }
+        desktop_off = FALSE;
+        return FALSE;
+    }
+    else
+    {
+        gboolean need_to_exit = (wallpaper_mode || set_wallpaper);
+        gboolean wallpaper_changed = FALSE;
+        if(set_wallpaper) /* a new wallpaper is assigned */
+        {
+            /* g_debug("\'%s\'", set_wallpaper); */
+            /* Make sure this is a support image file. */
+            if(gdk_pixbuf_get_file_info(set_wallpaper, NULL, NULL))
             {
-                desktop_running = FALSE;
-                fm_desktop_manager_finalize();
+                if(app_config->wallpaper)
+                    g_free(app_config->wallpaper);
+                app_config->wallpaper = set_wallpaper;
+                if(! wallpaper_mode) /* if wallpaper mode is not specified */
+                {
+                    /* do not use solid color mode; otherwise wallpaper won't be shown. */
+                    if(app_config->wallpaper_mode == FM_WP_COLOR)
+                        app_config->wallpaper_mode = FM_WP_FIT;
+                }
+                wallpaper_changed = TRUE;
             }
-            desktop_off = FALSE;
+            else
+                g_free(set_wallpaper);
+            set_wallpaper = NULL;
+        }
+
+        if(wallpaper_mode)
+        {
+            guint i = 0;
+            for(i = 0; i < G_N_ELEMENTS(valid_wallpaper_modes); ++i)
+            {
+                if(strcmp(valid_wallpaper_modes[i], wallpaper_mode) == 0)
+                {
+                    if(i != app_config->wallpaper_mode)
+                    {
+                        app_config->wallpaper_mode = i;
+                        wallpaper_changed = TRUE;
+                    }
+                    break;
+                }
+            }
+            g_free(wallpaper_mode);
+            wallpaper_mode = NULL;
+        }
+
+        if(wallpaper_changed)
+        {
+            fm_config_emit_changed(FM_CONFIG(app_config), "wallpaper");
+            fm_app_config_save_profile(app_config, profile);
+        }
+
+        if(need_to_exit)
             return FALSE;
-        }
-        else if(desktop_pref)
-        {
-            /* FIXME: pass screen number from client */
-            fm_desktop_preference(NULL, GTK_WINDOW(fm_desktop_get(0, 0)));
-            desktop_pref = FALSE;
-            return TRUE;
-        }
-        else
-        {
-            gboolean need_to_exit = (wallpaper_mode || set_wallpaper);
-            gboolean wallpaper_changed = FALSE;
-            if(set_wallpaper) /* a new wallpaper is assigned */
-            {
-                /* g_debug("\'%s\'", set_wallpaper); */
-                /* Make sure this is a support image file. */
-                if(gdk_pixbuf_get_file_info(set_wallpaper, NULL, NULL))
-                {
-                    if(app_config->wallpaper)
-                        g_free(app_config->wallpaper);
-                    app_config->wallpaper = set_wallpaper;
-                    if(! wallpaper_mode) /* if wallpaper mode is not specified */
-                    {
-                        /* do not use solid color mode; otherwise wallpaper won't be shown. */
-                        if(app_config->wallpaper_mode == FM_WP_COLOR)
-                            app_config->wallpaper_mode = FM_WP_FIT;
-                    }
-                    wallpaper_changed = TRUE;
-                }
-                else
-                    g_free(set_wallpaper);
-                set_wallpaper = NULL;
-            }
-
-            if(wallpaper_mode)
-            {
-                guint i = 0;
-                for(i = 0; i < G_N_ELEMENTS(valid_wallpaper_modes); ++i)
-                {
-                    if(strcmp(valid_wallpaper_modes[i], wallpaper_mode) == 0)
-                    {
-                        if(i != app_config->wallpaper_mode)
-                        {
-                            app_config->wallpaper_mode = i;
-                            wallpaper_changed = TRUE;
-                        }
-                        break;
-                    }
-                }
-                g_free(wallpaper_mode);
-                wallpaper_mode = NULL;
-            }
-
-            if(wallpaper_changed)
-            {
-                fm_config_emit_changed(FM_CONFIG(app_config), "wallpaper");
-                fm_app_config_save_profile(app_config, profile);
-            }
-
-            if(need_to_exit)
-                return FALSE;
-        }
     }
 
     return ret;
@@ -355,7 +318,7 @@ void pcmanfm_unref()
 {
     --n_pcmanfm_ref;
     /* g_debug("unref: %d, daemon_mode=%d, desktop_running=%d", n_pcmanfm_ref, daemon_mode, desktop_running); */
-    if( 0 == n_pcmanfm_ref && !daemon_mode && !desktop_running )
+    if( 0 == n_pcmanfm_ref && !desktop_running )
         gtk_main_quit();
 }
 
