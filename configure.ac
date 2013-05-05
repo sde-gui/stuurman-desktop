@@ -133,7 +133,6 @@ AC_CONFIG_FILES([
     po/Makefile.in
     data/Makefile
     data/ui/Makefile
-    data/ui/about.glade
 ])
 
 AC_OUTPUT
