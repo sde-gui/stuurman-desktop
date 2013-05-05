@@ -59,7 +59,6 @@ static void fm_app_config_finalize(GObject *object)
     }
     g_free(cfg->wallpaper);
     g_free(cfg->desktop_font);
-    g_free(cfg->su_cmd);
 
     G_OBJECT_CLASS(fm_app_config_parent_class)->finalize(object);
 }
@@ -70,19 +69,7 @@ static void fm_app_config_init(FmAppConfig *cfg)
     /* load libfm config file */
     fm_config_load_from_file((FmConfig*)cfg, NULL);
 
-    cfg->bm_open_method = FM_OPEN_IN_CURRENT_TAB;
-
-    cfg->mount_on_startup = TRUE;
-    cfg->mount_removable = TRUE;
-    cfg->autorun = TRUE;
-
     cfg->desktop_fg.red = cfg->desktop_fg.green = cfg->desktop_fg.blue = 65535;
-    cfg->win_width = 640;
-    cfg->win_height = 480;
-    cfg->splitter_pos = 150;
-    cfg->max_tab_chars = 32;
-
-    cfg->side_pane_mode = FM_SP_PLACES;
 
     cfg->view_mode = FM_FV_ICON_VIEW;
     cfg->show_hidden = FALSE;
@@ -105,16 +92,6 @@ void fm_app_config_load_from_key_file(FmAppConfig* cfg, GKeyFile* kf)
 {
     char* tmp;
     int tmp_int;
-    /* behavior */
-    fm_key_file_get_int(kf, "config", "bm_open_method", &cfg->bm_open_method);
-    tmp = g_key_file_get_string(kf, "config", "su_cmd", NULL);
-    g_free(cfg->su_cmd);
-    cfg->su_cmd = tmp;
-
-    /* volume management */
-    fm_key_file_get_bool(kf, "volume", "mount_on_startup", &cfg->mount_on_startup);
-    fm_key_file_get_bool(kf, "volume", "mount_removable", &cfg->mount_removable);
-    fm_key_file_get_bool(kf, "volume", "autorun", &cfg->autorun);
 
     /* desktop */
     if(fm_key_file_get_int(kf, "desktop", "wallpaper_mode", &tmp_int))
@@ -183,19 +160,6 @@ void fm_app_config_load_from_key_file(FmAppConfig* cfg, GKeyFile* kf)
     if(fm_key_file_get_int(kf, "desktop", "sort_by", &tmp_int) &&
        FM_FOLDER_MODEL_COL_IS_VALID((guint)tmp_int))
         cfg->desktop_sort_by = tmp_int;
-
-    /* ui */
-    fm_key_file_get_int(kf, "ui", "always_show_tabs", &cfg->always_show_tabs);
-    fm_key_file_get_int(kf, "ui", "hide_close_btn", &cfg->hide_close_btn);
-    fm_key_file_get_int(kf, "ui", "max_tab_chars", &cfg->max_tab_chars);
-
-    fm_key_file_get_int(kf, "ui", "win_width", &cfg->win_width);
-    fm_key_file_get_int(kf, "ui", "win_height", &cfg->win_height);
-
-    fm_key_file_get_int(kf, "ui", "splitter_pos", &cfg->splitter_pos);
-
-    if(fm_key_file_get_int(kf, "ui", "side_pane_mode", &tmp_int))
-        cfg->side_pane_mode = (FmSidePaneMode)tmp_int;
 
     /* default values for folder views */
     if(!fm_key_file_get_int(kf, "ui", "view_mode", &tmp_int) ||
@@ -288,16 +252,6 @@ void fm_app_config_save_profile(FmAppConfig* cfg, const char* name)
     {
         GString* buf = g_string_sized_new(1024);
 
-        g_string_append(buf, "[config]\n");
-        g_string_append_printf(buf, "bm_open_method=%d\n", cfg->bm_open_method);
-        if(cfg->su_cmd && *cfg->su_cmd)
-            g_string_append_printf(buf, "su_cmd=%s\n", cfg->su_cmd);
-
-        g_string_append(buf, "\n[volume]\n");
-        g_string_append_printf(buf, "mount_on_startup=%d\n", cfg->mount_on_startup);
-        g_string_append_printf(buf, "mount_removable=%d\n", cfg->mount_removable);
-        g_string_append_printf(buf, "autorun=%d\n", cfg->autorun);
-
         g_string_append(buf, "\n[desktop]\n");
         g_string_append_printf(buf, "wallpaper_mode=%d\n", cfg->wallpaper_mode);
         g_string_append_printf(buf, "wallpaper_common=%d\n", cfg->wallpaper_common);
@@ -323,13 +277,6 @@ void fm_app_config_save_profile(FmAppConfig* cfg, const char* name)
         g_string_append_printf(buf, "sort_by=%d\n", cfg->desktop_sort_by);
 
         g_string_append(buf, "\n[ui]\n");
-        g_string_append_printf(buf, "always_show_tabs=%d\n", cfg->always_show_tabs);
-        g_string_append_printf(buf, "max_tab_chars=%d\n", cfg->max_tab_chars);
-        /* g_string_append_printf(buf, "hide_close_btn=%d\n", cfg->hide_close_btn); */
-        g_string_append_printf(buf, "win_width=%d\n", cfg->win_width);
-        g_string_append_printf(buf, "win_height=%d\n", cfg->win_height);
-        g_string_append_printf(buf, "splitter_pos=%d\n", cfg->splitter_pos);
-        g_string_append_printf(buf, "side_pane_mode=%d\n", cfg->side_pane_mode);
         g_string_append_printf(buf, "view_mode=%d\n", cfg->view_mode);
         g_string_append_printf(buf, "show_hidden=%d\n", cfg->show_hidden);
         g_string_append_printf(buf, "sort_type=%d\n", cfg->sort_type);

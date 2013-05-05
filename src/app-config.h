@@ -50,45 +50,18 @@ typedef enum
     FM_WP_TILE
 }FmWallpaperMode;
 
-typedef enum
-{
-    FM_OPEN_IN_CURRENT_TAB,
-    FM_OPEN_IN_NEW_TAB,
-    FM_OPEN_IN_NEW_WINDOW,
-    FM_OPEN_IN_LAST_ACTIVE_WINDOW,
-}FmOpenMethod;
-
 typedef struct _FmAppConfig         FmAppConfig;
 typedef struct _FmAppConfigClass        FmAppConfigClass;
 
 struct _FmAppConfig
 {
     FmConfig parent;
-    /* config */
-    int bm_open_method;
-
-    /* volume */
-    gboolean mount_on_startup;
-    gboolean mount_removable;
-    gboolean autorun;
-
-    /* ui */
-    gboolean always_show_tabs;
-    gboolean hide_close_btn;
-    int max_tab_chars;
-    int win_width;
-    int win_height;
-    int splitter_pos;
-
-    FmSidePaneMode side_pane_mode;
 
     /* default values for folder views */
     guint view_mode;
     gboolean show_hidden;
     GtkSortType sort_type;
     int sort_by;
-
-    char* su_cmd;
 
     /* desktop manager */
     /* FIXME: make these setting per FmDesktop */
