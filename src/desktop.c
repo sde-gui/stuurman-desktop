@@ -2062,6 +2062,7 @@ static gboolean on_drag_motion (GtkWidget *dest_widget,
         fm_dnd_dest_set_dest_file(desktop->dnd_dest,
                                   item ? item->fi : fm_folder_get_info(desktop_folder));
         target = gtk_drag_dest_find_target(dest_widget, drag_context, NULL);
+g_print("%s\n", gdk_atom_name(target));
         if(target != GDK_NONE &&
            fm_dnd_dest_is_target_supported(desktop->dnd_dest, target))
             action = fm_dnd_dest_get_default_action(desktop->dnd_dest, drag_context, target);
@@ -2328,12 +2329,20 @@ static GObject* fm_desktop_constructor(GType type, guint n_construct_properties,
 
     /* init dnd support */
     self->dnd_src = fm_dnd_src_new((GtkWidget*)self);
+
     /* add our own targets */
-    fm_dnd_src_add_targets((GtkWidget*)self, dnd_targets, G_N_ELEMENTS(dnd_targets));
+    /*
+        We should not use fm_dnd_src_add_targets(), as it _prepends_ (not append) new targets to the target list.
+    */
+    //fm_dnd_src_add_targets((GtkWidget*)self, dnd_targets, G_N_ELEMENTS(dnd_targets));
+    gtk_target_list_add(gtk_drag_source_get_target_list(GTK_WIDGET(self)),
+        gdk_atom_intern_static_string(dnd_targets[0].target), dnd_targets[0].flags, dnd_targets[0].info);
     g_signal_connect(self->dnd_src, "data-get", G_CALLBACK(on_dnd_src_data_get), self);
 
     self->dnd_dest = fm_dnd_dest_new_with_handlers((GtkWidget*)self);
-    fm_dnd_dest_add_targets((GtkWidget*)self, dnd_targets, G_N_ELEMENTS(dnd_targets));
+    //fm_dnd_dest_add_targets((GtkWidget*)self, dnd_targets, G_N_ELEMENTS(dnd_targets));
+    gtk_target_list_add(gtk_drag_dest_get_target_list(GTK_WIDGET(self)),
+        gdk_atom_intern_static_string(dnd_targets[0].target), dnd_targets[0].flags, dnd_targets[0].info);
 
     gtk_window_group_add_window(win_group, GTK_WINDOW(self));
 
