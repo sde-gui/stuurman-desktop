@@ -187,8 +187,8 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    /* ensure that there is only one instance of pcmanfm. */
-    inst.prog_name = "pcmanfm";
+    /* ensure that there is only one instance of pcmanfm-desktop. */
+    inst.prog_name = "pcmanfm-desktop";
     inst.cb = single_inst_cb;
     inst.opt_entries = opt_entries + 3;
     inst.screen_num = gdk_x11_get_default_screen();
