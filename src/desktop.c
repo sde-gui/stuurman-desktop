@@ -2540,6 +2540,7 @@ static gint _count_selected_files(FmFolderView* fv)
 
 static FmFileInfoList* _dup_selected_files(FmFolderView* fv)
 {
+    g_print("_dup_selected_files\n");
     FmDesktop* desktop = FM_DESKTOP(fv);
     FmFileInfoList* files = NULL;
     GtkTreeModel* model = GTK_TREE_MODEL(desktop->model);
