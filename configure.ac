@@ -2,15 +2,14 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
-AC_INIT([stuurman-desktop], [1.1.0], [http://])
+AC_INIT([stuurman], [1.1.0], [http://])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
-
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES])
 AC_CONFIG_HEADERS([config.h])
 
 # Checks for programs.
 AC_ISC_POSIX
 AC_PROG_CC
-AM_PROG_CC_STDC
 AM_PROG_CC_C_O
 
 # Checks for header files.
