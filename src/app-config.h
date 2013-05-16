@@ -23,8 +23,7 @@
 #ifndef __APP_CONFIG_H__
 #define __APP_CONFIG_H__
 
-#include <libsmfm/fm.h>
-#include <libsmfm/fm-gtk.h>
+#include <libsmfm-gtk/fm-gtk.h>
 #include <gtk/gtk.h>
 
 G_BEGIN_DECLS

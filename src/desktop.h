@@ -24,7 +24,7 @@
 #define __DESKTOP_H__
 
 #include <gtk/gtk.h>
-#include <libsmfm/fm-gtk.h>
+#include <libsmfm-gtk/fm-gtk.h>
 
 G_BEGIN_DECLS
 
