@@ -2768,7 +2768,11 @@ void fm_desktop_manager_finalize()
 
     if(hand_cursor)
     {
+#if GTK_CHECK_VERSION(3, 0, 0)
+        g_object_unref(hand_cursor);
+#else
         gdk_cursor_unref(hand_cursor);
+#endif
         hand_cursor = NULL;
     }
 
