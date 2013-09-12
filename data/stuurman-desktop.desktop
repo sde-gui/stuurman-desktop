@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Icon=user-desktop
+Name=Stuurman Desktop Manager
+Exec=stuurman-desktop
+StartupNotify=false
+Terminal=false
+NoDisplay=true

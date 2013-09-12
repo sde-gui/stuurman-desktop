@@ -8,7 +8,7 @@ desktopdir=$(datadir)/applications
 desktop_in_files= \
 	stuurman-desktop-pref.desktop.in \
 	$(NULL)
-desktop_DATA = $(desktop_in_files:.desktop.in=.desktop)
+desktop_DATA = $(desktop_in_files:.desktop.in=.desktop) stuurman-desktop.desktop
 @INTLTOOL_DESKTOP_RULE@
 
 defconfdir=$(sysconfdir)/xdg/stuurman-desktop/default

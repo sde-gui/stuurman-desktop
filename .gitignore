@@ -17,7 +17,7 @@ LINGUAS
 POTFILES
 stamp-*
 
-*.desktop
+data/stuurman-desktop-pref.desktop
 *.1
 *.ui
 data/ui/about.glade
