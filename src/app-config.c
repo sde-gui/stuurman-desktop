@@ -74,6 +74,8 @@ static void fm_app_config_init(FmAppConfig *cfg)
 
     cfg->desktop_fg.red = cfg->desktop_fg.green = cfg->desktop_fg.blue = 65535;
 
+    gdk_color_parse("#3A6EA5", &cfg->desktop_bg);
+
     cfg->desktop_sort_type = GTK_SORT_ASCENDING;
     cfg->desktop_sort_by = COL_FILE_MTIME;
 
