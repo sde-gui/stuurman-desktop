@@ -1596,7 +1596,7 @@ static void on_size_request(GtkWidget* w, GtkRequisition* req)
 
 static gboolean on_button_press(GtkWidget* w, GdkEventButton* evt)
 {
-    g_print("on_button_press\n");
+    //g_print("on_button_press\n");
 
     FmDesktop* self = (FmDesktop*)w;
     FmDesktopItem *item = NULL, *clicked_item = NULL;
@@ -1706,7 +1706,7 @@ static gboolean on_button_press(GtkWidget* w, GdkEventButton* evt)
 
 static gboolean on_button_release(GtkWidget* w, GdkEventButton* evt)
 {
-    g_print("on_button_release\n");
+    //g_print("on_button_release\n");
 
     FmDesktop* self = (FmDesktop*)w;
     GtkTreeIter it;
@@ -1752,7 +1752,7 @@ static gboolean on_button_release(GtkWidget* w, GdkEventButton* evt)
 
 static gboolean on_single_click_timeout(gpointer user_data)
 {
-    g_print("on_single_click_timeout\n");
+    //g_print("on_single_click_timeout\n");
 
     FmDesktop* self = (FmDesktop*)user_data;
     GtkWidget* w = (GtkWidget*)self;
@@ -1784,7 +1784,7 @@ static gboolean on_motion_notify(GtkWidget* w, GdkEventMotion* evt)
 {
     FmDesktop* self = (FmDesktop*)w;
 
-    g_print("self->button_pressed = %d, x = %d, y = %d\n", (int)self->button_pressed, (int)evt->x, (int)evt->y);
+    //g_print("self->button_pressed = %d, x = %d, y = %d\n", (int)self->button_pressed, (int)evt->x, (int)evt->y);
 
     if(! self->button_pressed)
     {
@@ -1854,7 +1854,7 @@ static gboolean on_motion_notify(GtkWidget* w, GdkEventMotion* evt)
 
 static gboolean on_leave_notify(GtkWidget* w, GdkEventCrossing *evt)
 {
-    g_print("on_leave_notify\n");
+    //g_print("on_leave_notify\n");
 
     FmDesktop* self = (FmDesktop*)w;
     if(self->single_click_timeout_handler)
@@ -2001,6 +2001,12 @@ static void on_arrange_icons_rtl_changed(FmConfig* cfg, GtkWidget* w)
     queue_layout_items(self);
 }
 
+static void on_arrange_icons_in_rows_changed(FmConfig* cfg, GtkWidget* w)
+{
+    FmDesktop * self = (FmDesktop *) w;
+    queue_layout_items(self);
+}
+
 static void on_realize(GtkWidget* w)
 {
     FmDesktop* self = (FmDesktop*)w;
@@ -2044,14 +2050,14 @@ static gboolean on_focus_out(GtkWidget* w, GdkEventFocus* evt)
 
 static void on_drag_begin(GtkWidget * widget, GdkDragContext * drag_context)
 {
-    g_print("on_drag_begin\n");
+    //g_print("on_drag_begin\n");
     FmDesktop* desktop = FM_DESKTOP(widget);
     desktop->dragging = TRUE;
 }
 
 static void on_drag_end(GtkWidget * widget, GdkDragContext * drag_context)
 {
-    g_print("on_drag_end\n");
+    //g_print("on_drag_end\n");
     FmDesktop* desktop = FM_DESKTOP(widget);
     desktop->dragging = FALSE;
 }
@@ -2279,6 +2285,9 @@ static void fm_desktop_destroy(GtkObject *object)
 
         g_signal_handlers_disconnect_by_func(screen, on_screen_size_changed, self);
 
+        g_signal_handlers_disconnect_by_func(app_config, on_arrange_icons_rtl_changed, self);
+        g_signal_handlers_disconnect_by_func(app_config, on_arrange_icons_in_rows_changed, self);
+
         gtk_window_group_remove_window(win_group, (GtkWindow*)self);
 
         disconnect_model(self);
@@ -2394,6 +2403,8 @@ static GObject* fm_desktop_constructor(GType type, guint n_construct_properties,
 
     g_signal_connect(app_config, "changed::arrange_icons_rtl",
                      G_CALLBACK(on_arrange_icons_rtl_changed), self);
+    g_signal_connect(app_config, "changed::arrange_icons_in_rows",
+                     G_CALLBACK(on_arrange_icons_in_rows_changed), self);
 
     return object;
 }
