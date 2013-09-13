@@ -33,6 +33,7 @@
 
 #define INIT_BOOL(b, st, name, changed_notify)  init_bool(b, #name, G_STRUCT_OFFSET(st, name), changed_notify)
 #define INIT_COMBO(b, st, name, changed_notify) init_combo(b, #name, G_STRUCT_OFFSET(st, name), changed_notify)
+#define INIT_INT(b, st, name, changed_notify) init_int(b, #name, G_STRUCT_OFFSET(st, name), changed_notify)
 #define INIT_ICON_SIZES(b, name) init_icon_sizes(b, #name, G_STRUCT_OFFSET(FmConfig, name))
 #define INIT_COLOR(b, st, name, changed_notify)  init_color(b, #name, G_STRUCT_OFFSET(st, name), changed_notify)
 #define INIT_SPIN(b, st, name, changed_notify)  init_spin(b, #name, G_STRUCT_OFFSET(st, name), changed_notify)
@@ -55,7 +56,7 @@ static void on_combo_changed(GtkComboBox* combo, gpointer _off)
     if(sel != *val)
     {
         const char* name = g_object_get_data((GObject*)combo, "changed");
-        if(!name)
+        if (!name)
             name = gtk_buildable_get_name((GtkBuildable*)combo);
         *val = sel;
         fm_config_emit_changed(fm_config, name);
@@ -64,13 +65,39 @@ static void on_combo_changed(GtkComboBox* combo, gpointer _off)
 
 static void init_combo(GtkBuilder* builder, const char* name, gsize off, const char* changed_notify)
 {
-    GtkComboBox* combo = (GtkComboBox*)gtk_builder_get_object(builder, name);
+    GtkComboBox * combo = GTK_COMBO_BOX(gtk_builder_get_object(builder, name));
     int* val = (int*)G_STRUCT_MEMBER_P(fm_config, off);
-    if(changed_notify)
+    if (changed_notify)
         g_object_set_data_full(G_OBJECT(combo), "changed", g_strdup(changed_notify), g_free);
     gtk_combo_box_set_active(combo, *val);
     g_signal_connect(combo, "changed", G_CALLBACK(on_combo_changed), GSIZE_TO_POINTER(off));
 }
+
+static void on_spin_button_value_changed(GtkSpinButton * spin, gpointer _off)
+{
+    gsize off = GPOINTER_TO_SIZE(_off);
+    int* val = (int*)G_STRUCT_MEMBER_P(fm_config, off);
+    int sel = gtk_spin_button_get_value(spin);
+    if(sel != *val)
+    {
+        const char* name = g_object_get_data((GObject*)spin, "changed");
+        if (!name)
+            name = gtk_buildable_get_name((GtkBuildable*)spin);
+        *val = sel;
+        fm_config_emit_changed(fm_config, name);
+    }
+}
+
+static void init_int(GtkBuilder* builder, const char* name, gsize off, const char* changed_notify)
+{
+    GtkSpinButton * spin = GTK_SPIN_BUTTON(gtk_builder_get_object(builder, name));
+    int* val = (int*)G_STRUCT_MEMBER_P(fm_config, off);
+    if (changed_notify)
+        g_object_set_data_full(G_OBJECT(spin), "changed", g_strdup(changed_notify), g_free);
+    gtk_spin_button_set_value(spin, *val);
+    g_signal_connect(spin, "value-changed", G_CALLBACK(on_spin_button_value_changed), GSIZE_TO_POINTER(off));
+}
+
 
 static void on_toggled(GtkToggleButton* btn, gpointer _off)
 {
@@ -194,6 +221,7 @@ void fm_desktop_preference(GtkAction* act, GtkWindow* parent)
 
         INIT_COMBO(builder, FmAppConfig, arrange_icons_rtl, "arrange_icons_rtl");
         INIT_COMBO(builder, FmAppConfig, arrange_icons_in_rows, "arrange_icons_in_rows");
+        INIT_INT(builder, FmAppConfig, desktop_icon_size, "desktop_icon_size");
 
         item = (GtkWidget*)gtk_builder_get_object(builder, "desktop_font");
         if(app_config->desktop_font)
