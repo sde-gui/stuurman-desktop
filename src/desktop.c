@@ -380,7 +380,6 @@ static void layout_items(FmDesktop* self)
     GdkPixbuf* icon;
     GtkTreeIter it;
     int x, y, bottom;
-    GtkTextDirection direction = gtk_widget_get_direction(GTK_WIDGET(self));
 
     y = self->ymargin;
     bottom = self->working_area.height - self->ymargin - self->cell_h;
@@ -390,7 +389,8 @@ static void layout_items(FmDesktop* self)
         gtk_widget_queue_draw(GTK_WIDGET(self));
         return;
     }
-    if(direction != GTK_TEXT_DIR_RTL) /* LTR or NONE */
+
+    if (!app_config->arrange_icons_rtl)  /* LTR */
     {
         x = self->xmargin;
         do

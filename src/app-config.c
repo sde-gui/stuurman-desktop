@@ -160,6 +160,8 @@ void fm_app_config_load_from_key_file(FmAppConfig* cfg, GKeyFile* kf)
     if(fm_key_file_get_int(kf, "desktop", "sort_by", &tmp_int) &&
        FM_FOLDER_MODEL_COL_IS_VALID((guint)tmp_int))
         cfg->desktop_sort_by = tmp_int;
+
+    fm_key_file_get_bool(kf, "desktop", "arrange_icons_rtl", &cfg->arrange_icons_rtl);
 }
 
 void fm_app_config_load_from_profile(FmAppConfig* cfg, const char* name)
@@ -233,6 +235,7 @@ void fm_app_config_save_profile(FmAppConfig* cfg, const char* name)
         g_string_append_printf(buf, "show_wm_menu=%d\n", cfg->show_wm_menu);
         g_string_append_printf(buf, "sort_type=%d\n", cfg->desktop_sort_type);
         g_string_append_printf(buf, "sort_by=%d\n", cfg->desktop_sort_by);
+        g_string_append_printf(buf, "arrange_icons_rtl=%d\n", cfg->arrange_icons_rtl);
 
         path = g_build_filename(dir_path, APP_CONFIG_NAME, NULL);
         g_file_set_contents(path, buf->str, buf->len, NULL);
