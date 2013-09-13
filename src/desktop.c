@@ -1228,9 +1228,7 @@ static FmDesktopItem* hit_test(FmDesktop* self, GtkTreeIter *it, int x, int y)
 
 static FmDesktopItem* get_nearest_item(FmDesktop* desktop, FmDesktopItem* item,  GtkDirectionType dir)
 {
-    GtkTreeModel* model = GTK_TREE_MODEL(desktop->model);
-    FmDesktopItem* item2, *ret = NULL;
-    guint min_x_dist, min_y_dist, dist;
+    GtkTreeModel * model = GTK_TREE_MODEL(desktop->model);
     GtkTreeIter it;
 
     if(!gtk_tree_model_get_iter_first(model, &it))
@@ -1238,120 +1236,68 @@ static FmDesktopItem* get_nearest_item(FmDesktop* desktop, FmDesktopItem* item, 
     if(!item) /* there is no focused item yet, select first one then */
         return fm_folder_model_get_item_userdata(desktop->model, &it);
 
-    min_x_dist = min_y_dist = (guint)-1;
-    item2 = NULL;
+    float d_left   = 1.5;
+    float d_up     = 1.5;
+    gboolean vertical = FALSE;
 
     switch(dir)
     {
-    case GTK_DIR_LEFT:
-        do
-        {
-            item2 = fm_folder_model_get_item_userdata(desktop->model, &it);
-            if(item2->x >= item->x)
-                continue;
-            dist = item->x - item2->x;
-            if(dist < min_x_dist)
-            {
-                ret = item2;
-                min_x_dist = dist;
-                min_y_dist = ABS(item->y - item2->y);
-            }
-            else if(dist == min_x_dist && item2 != ret) /* if there is another item of the same x distance */
-            {
-                /* get the one with smaller y distance */
-                dist = ABS(item2->y - item->y);
-                if(dist < min_y_dist)
-                {
-                    ret = item2;
-                    min_y_dist = dist;
-                }
-            }
-        }
-        while(gtk_tree_model_iter_next(model, &it));
-        break;
-    case GTK_DIR_RIGHT:
-        do
-        {
-            item2 = fm_folder_model_get_item_userdata(desktop->model, &it);
-            if(item2->x <= item->x)
-                continue;
-            dist = item2->x - item->x;
-            if(dist < min_x_dist)
-            {
-                ret = item2;
-                min_x_dist = dist;
-                min_y_dist = ABS(item->y - item2->y);
-            }
-            else if(dist == min_x_dist && item2 != ret) /* if there is another item of the same x distance */
-            {
-                /* get the one with smaller y distance */
-                dist = ABS(item2->y - item->y);
-                if(dist < min_y_dist)
-                {
-                    ret = item2;
-                    min_y_dist = dist;
-                }
-            }
-        }
-        while(gtk_tree_model_iter_next(model, &it));
-        break;
-    case GTK_DIR_UP:
-        do
-        {
-            item2 = fm_folder_model_get_item_userdata(desktop->model, &it);
-            if(item2->y >= item->y)
-                continue;
-            dist = item->y - item2->y;
-            if(dist < min_y_dist)
-            {
-                ret = item2;
-                min_y_dist = dist;
-                min_x_dist = ABS(item->x - item2->x);
-            }
-            else if(dist == min_y_dist && item2 != ret) /* if there is another item of the same y distance */
-            {
-                /* get the one with smaller x distance */
-                dist = ABS(item2->x - item->x);
-                if(dist < min_x_dist)
-                {
-                    ret = item2;
-                    min_x_dist = dist;
-                }
-            }
-        }
-        while(gtk_tree_model_iter_next(model, &it));
-        break;
-    case GTK_DIR_DOWN:
-        do
-        {
-            item2 = fm_folder_model_get_item_userdata(desktop->model, &it);
-            if(item2->y <= item->y)
-                continue;
-            dist = item2->y - item->y;
-            if(dist < min_y_dist)
-            {
-                ret = item2;
-                min_y_dist = dist;
-                min_x_dist = ABS(item->x - item2->x);
-            }
-            else if(dist == min_y_dist && item2 != ret) /* if there is another item of the same y distance */
-            {
-                /* get the one with smaller x distance */
-                dist = ABS(item2->x - item->x);
-                if(dist < min_x_dist)
-                {
-                    ret = item2;
-                    min_x_dist = dist;
-                }
-            }
-        }
-        while(gtk_tree_model_iter_next(model, &it));
-        break;
-    case GTK_DIR_TAB_FORWARD: /* FIXME */
-        break;
-    case GTK_DIR_TAB_BACKWARD: /* FIXME */
-        ;
+        case GTK_DIR_LEFT:
+            d_left = 1;
+            vertical = FALSE;
+            break;
+        case GTK_DIR_RIGHT:
+            d_left = -1;
+            vertical = FALSE;
+            break;
+        case GTK_DIR_UP:
+            d_up = 1;
+            vertical = TRUE;
+            break;
+        case GTK_DIR_DOWN:
+            d_up = -1;
+            vertical = TRUE;
+            break;
+        case GTK_DIR_TAB_FORWARD: /* FIXME */
+            break;
+        case GTK_DIR_TAB_BACKWARD: /* FIXME */
+            break;
     }
+
+    FmDesktopItem * ret = NULL;
+    float ret_distance = 0;
+
+    do
+    {
+        FmDesktopItem * item2 = fm_folder_model_get_item_userdata(desktop->model, &it);
+        if (item2 == item)
+            continue;
+
+        float dx = (item->x - item2->x) * d_left;
+        float dy = (item->y - item2->y) * d_up;
+
+        if (!vertical && dx < 0)
+            continue;
+
+        if (vertical && dy < 0)
+            continue;
+
+        if (!vertical && dx == 0 && dy != 0)
+            continue;
+
+        if (vertical && dx != 0 && dy == 0)
+            continue;
+
+        float distance = dx * dx + dy * dy;
+
+        if (!ret || distance < ret_distance)
+        {
+            ret = item2;
+            ret_distance = distance;
+        }
+    }
+    while(gtk_tree_model_iter_next(model, &it));
+
     return ret;
 }
 
