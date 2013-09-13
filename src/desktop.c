@@ -569,7 +569,8 @@ static void paint_item(FmDesktop* self, FmDesktopItem* item, cairo_t* cr, GdkRec
     pango_cairo_show_layout(cr, self->pl);
     pango_layout_set_text(self->pl, NULL, 0);
 
-    if(item == self->focus && gtk_widget_has_focus(widget))
+    if (item == self->focus)
+    {
 #if GTK_CHECK_VERSION(3, 0, 0)
         gtk_render_focus(style, cr,
 #else
@@ -577,6 +578,7 @@ static void paint_item(FmDesktop* self, FmDesktopItem* item, cairo_t* cr, GdkRec
                         expose_area, widget, "icon_view",
 #endif
                         item->text_rect.x, item->text_rect.y, item->text_rect.width, item->text_rect.height);
+    }
 
     /* draw the icon */
     g_object_set(self->icon_render, "pixbuf", icon, "info", item->fi, NULL);
