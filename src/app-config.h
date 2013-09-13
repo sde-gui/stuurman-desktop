@@ -72,6 +72,7 @@ struct _FmAppConfig
     char* desktop_font;
 
     int arrange_icons_rtl;
+    int arrange_icons_in_rows;
 
     gboolean show_wm_menu;
     GtkSortType desktop_sort_type;

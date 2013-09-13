@@ -379,10 +379,14 @@ static void layout_items(FmDesktop* self)
     GtkTreeModel* model = GTK_TREE_MODEL(self->model);
     GdkPixbuf* icon;
     GtkTreeIter it;
-    int x, y, bottom;
+    int x, y;
 
-    y = self->ymargin;
-    bottom = self->working_area.height - self->ymargin - self->cell_h;
+    int bottom_line = self->working_area.height - self->ymargin - self->cell_h;
+    int right_line  = self->working_area.width - self->xmargin - self->cell_w;
+    int top_line   = self->ymargin;
+    int left_line   = self->xmargin;
+
+    int arrange_icons_in_rows = app_config->arrange_icons_in_rows;
 
     if(!gtk_tree_model_get_iter_first(model, &it))
     {
@@ -392,44 +396,60 @@ static void layout_items(FmDesktop* self)
 
     if (!app_config->arrange_icons_rtl)  /* LTR */
     {
-        x = self->xmargin;
+        x = left_line;
+        y = top_line;
         do
         {
             item = fm_folder_model_get_item_userdata(self->model, &it);
             icon = NULL;
             gtk_tree_model_get(model, &it, COL_FILE_ICON, &icon, -1);
-            if(item->fixed_pos)
+            if (item->fixed_pos)
+            {
                 calc_item_size(self, item, icon);
+            }
             else
             {
 _next_position:
                 item->x = self->working_area.x + x;
                 item->y = self->working_area.y + y;
                 calc_item_size(self, item, icon);
-                y += self->cell_h;
-                if(y > bottom)
+                if (arrange_icons_in_rows)
                 {
                     x += self->cell_w;
-                    y = self->ymargin;
+                    if (x > right_line)
+                    {
+                        y += self->cell_h;
+                        x = left_line;
+                    }
+                }
+                else
+                {
+                    y += self->cell_h;
+                    if (y > bottom_line)
+                    {
+                        x += self->cell_w;
+                        y = top_line;
+                    }
                 }
                 /* check if this position is occupied by a fixed item */
-                if(is_pos_occupied(self, item))
+                if (is_pos_occupied(self, item))
                     goto _next_position;
             }
-            if(icon)
+            if (icon)
                 g_object_unref(icon);
         }
         while(gtk_tree_model_iter_next(model, &it));
     }
     else /* RTL */
     {
-        x = self->working_area.width - self->xmargin - self->cell_w;
+        x = right_line;
+        y = top_line;
         do
         {
             item = fm_folder_model_get_item_userdata(self->model, &it);
             icon = NULL;
             gtk_tree_model_get(model, &it, COL_FILE_ICON, &icon, -1);
-            if(item->fixed_pos)
+            if (item->fixed_pos)
                 calc_item_size(self, item, icon);
             else
             {
@@ -437,17 +457,29 @@ _next_position_rtl:
                 item->x = self->working_area.x + x;
                 item->y = self->working_area.y + y;
                 calc_item_size(self, item, icon);
-                y += self->cell_h;
-                if(y > bottom)
+                if (arrange_icons_in_rows)
                 {
                     x -= self->cell_w;
-                    y = self->ymargin;
+                    if (x < left_line)
+                    {
+                        y += self->cell_h;
+                        x = right_line;
+                    }
+                }
+                else
+                {
+                    y += self->cell_h;
+                    if (y > bottom_line)
+                    {
+                        x -= self->cell_w;
+                        y = top_line;
+                    }
                 }
                 /* check if this position is occupied by a fixed item */
                 if(is_pos_occupied(self, item))
                     goto _next_position_rtl;
             }
-            if(icon)
+            if (icon)
                 g_object_unref(icon);
         }
         while(gtk_tree_model_iter_next(model, &it));
