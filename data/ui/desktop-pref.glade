@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <requires lib="gtk+" version="2.18"/>
+  <requires lib="gtk+" version="2.24"/>
   <!-- interface-naming-policy toplevel-contextual -->
   <object class="GtkDialog" id="dlg">
     <property name="can_focus">False</property>
@@ -22,10 +22,10 @@
             <child>
               <object class="GtkButton" id="close">
                 <property name="label">gtk-close</property>
+                <property name="use_action_appearance">False</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <property name="use_action_appearance">False</property>
                 <property name="use_stock">True</property>
               </object>
               <packing>
@@ -129,10 +129,10 @@
                                 <child>
                                   <object class="GtkCheckButton" id="wallpaper_common">
                                     <property name="label" translatable="yes">_Use the same wallpaper on all desktops</property>
+                                    <property name="use_action_appearance">False</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">False</property>
-                                    <property name="use_action_appearance">False</property>
                                     <property name="use_underline">True</property>
                                     <property name="draw_indicator">True</property>
                                   </object>
@@ -166,10 +166,10 @@
                                 </child>
                                 <child>
                                   <object class="GtkColorButton" id="desktop_bg">
+                                    <property name="use_action_appearance">False</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">True</property>
-                                    <property name="use_action_appearance">False</property>
                                     <property name="color">#000000000000</property>
                                   </object>
                                   <packing>
@@ -296,10 +296,10 @@
                                 </child>
                                 <child>
                                   <object class="GtkFontButton" id="desktop_font">
+                                    <property name="use_action_appearance">False</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">True</property>
-                                    <property name="use_action_appearance">False</property>
                                   </object>
                                   <packing>
                                     <property name="expand">True</property>
@@ -340,10 +340,10 @@
                                     </child>
                                     <child>
                                       <object class="GtkColorButton" id="desktop_fg">
+                                        <property name="use_action_appearance">False</property>
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="receives_default">True</property>
-                                        <property name="use_action_appearance">False</property>
                                         <property name="color">#000000000000</property>
                                       </object>
                                       <packing>
@@ -380,10 +380,10 @@
                                     </child>
                                     <child>
                                       <object class="GtkColorButton" id="desktop_shadow">
+                                        <property name="use_action_appearance">False</property>
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="receives_default">True</property>
-                                        <property name="use_action_appearance">False</property>
                                         <property name="color">#000000000000</property>
                                       </object>
                                       <packing>
@@ -437,12 +437,12 @@
             </child>
             <child>
               <object class="GtkVBox" id="icons_page">
+                <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="border_width">12</property>
                 <property name="spacing">18</property>
                 <child>
                   <object class="GtkVBox" id="vbox8">
-                    <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="spacing">6</property>
                     <child>
@@ -472,9 +472,9 @@
                             <child>
                               <object class="GtkCheckButton" id="show_my_doc">
                                 <property name="label" translatable="yes">_Show "My Documents" icon on desktop</property>
+                                <property name="use_action_appearance">False</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
-                                <property name="use_action_appearance">False</property>
                                 <property name="use_underline">True</property>
                                 <property name="draw_indicator">True</property>
                               </object>
@@ -487,9 +487,9 @@
                             <child>
                               <object class="GtkCheckButton" id="show_my_computer">
                                 <property name="label" translatable="yes">Show "_My Computer" icon on desktop</property>
+                                <property name="use_action_appearance">False</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
-                                <property name="use_action_appearance">False</property>
                                 <property name="use_underline">True</property>
                                 <property name="draw_indicator">True</property>
                               </object>
@@ -502,9 +502,9 @@
                             <child>
                               <object class="GtkCheckButton" id="show_trash">
                                 <property name="label" translatable="yes">Show "_Trash Bin" icon on desktop</property>
+                                <property name="use_action_appearance">False</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
-                                <property name="use_action_appearance">False</property>
                                 <property name="use_underline">True</property>
                                 <property name="draw_indicator">True</property>
                               </object>
@@ -517,9 +517,9 @@
                             <child>
                               <object class="GtkCheckButton" id="show_volumes">
                                 <property name="label" translatable="yes">S_how icons of volumes on desktop</property>
+                                <property name="use_action_appearance">False</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
-                                <property name="use_action_appearance">False</property>
                                 <property name="use_underline">True</property>
                                 <property name="draw_indicator">True</property>
                               </object>
@@ -543,6 +543,96 @@
                     <property name="expand">False</property>
                     <property name="fill">True</property>
                     <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkFrame" id="frame1">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label_xalign">0</property>
+                    <property name="shadow_type">none</property>
+                    <child>
+                      <object class="GtkAlignment" id="alignment2">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="left_padding">12</property>
+                        <child>
+                          <object class="GtkHBox" id="hbox7">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <child>
+                              <object class="GtkVBox" id="vbox9">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <child>
+                                  <object class="GtkTable" id="table1">
+                                    <property name="visible">True</property>
+                                    <property name="can_focus">False</property>
+                                    <property name="n_rows">2</property>
+                                    <property name="n_columns">2</property>
+                                    <property name="column_spacing">4</property>
+                                    <child>
+                                      <placeholder/>
+                                    </child>
+                                    <child>
+                                      <placeholder/>
+                                    </child>
+                                    <child>
+                                      <object class="GtkLabel" id="label9">
+                                        <property name="visible">True</property>
+                                        <property name="can_focus">False</property>
+                                        <property name="label" translatable="yes">Direction:</property>
+                                        <property name="use_markup">True</property>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkComboBox" id="arrange_icons_rtl">
+                                        <property name="visible">True</property>
+                                        <property name="can_focus">False</property>
+                                        <property name="model">liststore1</property>
+                                        <child>
+                                          <object class="GtkCellRendererText" id="cellrenderertext2"/>
+                                          <attributes>
+                                            <attribute name="text">0</attribute>
+                                          </attributes>
+                                        </child>
+                                      </object>
+                                      <packing>
+                                        <property name="left_attach">1</property>
+                                        <property name="right_attach">2</property>
+                                      </packing>
+                                    </child>
+                                  </object>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">True</property>
+                                    <property name="position">0</property>
+                                  </packing>
+                                </child>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child type="label">
+                      <object class="GtkLabel" id="label8">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">&lt;b&gt;Icon arrangement&lt;/b&gt;</property>
+                        <property name="use_markup">True</property>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
                   </packing>
                 </child>
               </object>
@@ -571,11 +661,11 @@
                 <child>
                   <object class="GtkCheckButton" id="show_wm_menu">
                     <property name="label" translatable="yes">_Show menus provided by window managers when desktop is clicked</property>
+                    <property name="use_action_appearance">False</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">False</property>
                     <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
-                    <property name="use_action_appearance">False</property>
                     <property name="use_underline">True</property>
                     <property name="draw_indicator">True</property>
                   </object>
@@ -614,6 +704,24 @@
     <action-widgets>
       <action-widget response="0">close</action-widget>
     </action-widgets>
+  </object>
+  <object class="GtkListStore" id="liststore1">
+    <columns>
+      <!-- column-name title -->
+      <column type="gchararray"/>
+      <!-- column-name value -->
+      <column type="guint"/>
+    </columns>
+    <data>
+      <row>
+        <col id="0" translatable="yes">Left To Right</col>
+        <col id="1">0</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">Right To Left</col>
+        <col id="1">1</col>
+      </row>
+    </data>
   </object>
   <object class="GtkListStore" id="wp_modes">
     <columns>

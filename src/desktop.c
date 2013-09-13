@@ -1963,6 +1963,12 @@ static void on_direction_changed(GtkWidget* w, GtkTextDirection prev)
     queue_layout_items(self);
 }
 
+static void on_arrange_icons_rtl_changed(FmConfig* cfg, GtkWidget* w)
+{
+    FmDesktop * self = (FmDesktop *) w;
+    queue_layout_items(self);
+}
+
 static void on_realize(GtkWidget* w)
 {
     FmDesktop* self = (FmDesktop*)w;
@@ -2353,6 +2359,9 @@ static GObject* fm_desktop_constructor(GType type, guint n_construct_properties,
                              fm_desktop_update_popup);
 
     hand_cursor = gdk_cursor_new(GDK_HAND2);
+
+    g_signal_connect(app_config, "changed::arrange_icons_rtl",
+                     G_CALLBACK(on_arrange_icons_rtl_changed), self);
 
     return object;
 }

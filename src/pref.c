@@ -192,6 +192,8 @@ void fm_desktop_preference(GtkAction* act, GtkWindow* parent)
 
         INIT_BOOL(builder, FmAppConfig, show_wm_menu, NULL);
 
+        INIT_COMBO(builder, FmAppConfig, arrange_icons_rtl, "arrange_icons_rtl");
+
         item = (GtkWidget*)gtk_builder_get_object(builder, "desktop_font");
         if(app_config->desktop_font)
             gtk_font_button_set_font_name(GTK_FONT_BUTTON(item), app_config->desktop_font);

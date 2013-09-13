@@ -71,7 +71,7 @@ struct _FmAppConfig
     /* emit "changed::desktop_font" */
     char* desktop_font;
 
-    gboolean arrange_icons_rtl;
+    int arrange_icons_rtl;
 
     gboolean show_wm_menu;
     GtkSortType desktop_sort_type;
