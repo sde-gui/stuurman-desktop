@@ -174,13 +174,13 @@ static void calc_item_size(FmDesktop* desktop, FmDesktopItem* item, GdkPixbuf* i
         item->icon_rect.width = gdk_pixbuf_get_width(icon);
         item->icon_rect.height = gdk_pixbuf_get_height(icon);
         item->icon_rect.x = item->x + (desktop->cell_w - item->icon_rect.width) / 2;
-        item->icon_rect.y = item->y + desktop->ypad + (fm_config->big_icon_size - item->icon_rect.height) / 2;
+        item->icon_rect.y = item->y + desktop->ypad + (app_config->desktop_icon_size - item->icon_rect.height) / 2;
         item->icon_rect.height += desktop->spacing;
     }
     else
     {
-        item->icon_rect.width = fm_config->big_icon_size;
-        item->icon_rect.height = fm_config->big_icon_size;
+        item->icon_rect.width = app_config->desktop_icon_size;
+        item->icon_rect.height = app_config->desktop_icon_size;
         item->icon_rect.x = item->x + desktop->ypad;
         item->icon_rect.y = item->y + desktop->ypad;
         item->icon_rect.height += desktop->spacing;
@@ -1024,9 +1024,9 @@ static void reload_icons()
             gtk_widget_queue_resize(GTK_WIDGET(desktops[i]));
 }
 
-static void on_big_icon_size_changed(FmConfig* cfg, FmFolderModel* model)
+static void on_desktop_icon_size_changed(FmConfig* cfg, FmFolderModel* model)
 {
-    fm_folder_model_set_icon_size(model, fm_config->big_icon_size);
+    fm_folder_model_set_icon_size(model, app_config->desktop_icon_size);
     reload_icons();
 }
 
@@ -1496,8 +1496,8 @@ static void on_size_allocate(GtkWidget* w, GtkAllocation* alloc)
     self->pango_text_w = self->text_w * PANGO_SCALE;
     self->text_h += 4;
     self->text_w += 4; /* 4 is for drawing border */
-    self->cell_h = fm_config->big_icon_size + self->spacing + self->text_h + self->ypad * 2;
-    self->cell_w = MAX((gint)self->text_w, fm_config->big_icon_size) + self->xpad * 2;
+    self->cell_h = app_config->desktop_icon_size + self->spacing + self->text_h + self->ypad * 2;
+    self->cell_w = MAX((gint)self->text_w, app_config->desktop_icon_size) + self->xpad * 2;
 
     update_working_area(self);
     /* queue_layout_items(self); this is called in update_working_area */
@@ -2182,7 +2182,7 @@ static void on_dnd_src_data_get(FmDndSrc* ds, FmDesktop* desktop)
 #if 0
 static void on_desktop_model_destroy(gpointer data, GObject* model)
 {
-    g_signal_handlers_disconnect_by_func(app_config, on_big_icon_size_changed, model);
+    g_signal_handlers_disconnect_by_func(app_config, on_desktop_icon_size_changed, model);
     *(gpointer*)data = NULL;
 }
 #endif
@@ -2191,9 +2191,9 @@ static inline void connect_model(FmDesktop* desktop)
 {
     /* FIXME: different screens should be able to use different models */
     desktop->model = fm_folder_model_new(desktop_folder, FALSE);
-    fm_folder_model_set_icon_size(desktop->model, fm_config->big_icon_size);
-    g_signal_connect(app_config, "changed::big_icon_size",
-                     G_CALLBACK(on_big_icon_size_changed), desktop->model);
+    fm_folder_model_set_icon_size(desktop->model, app_config->desktop_icon_size);
+    g_signal_connect(app_config, "changed::desktop_icon_size",
+                     G_CALLBACK(on_desktop_icon_size_changed), desktop->model);
     g_signal_connect(desktop->model, "row-deleting", G_CALLBACK(on_row_deleting), desktop);
     g_signal_connect(desktop->model, "row-inserted", G_CALLBACK(on_row_inserted), desktop);
     g_signal_connect(desktop->model, "row-deleted", G_CALLBACK(on_row_deleted), desktop);
@@ -2206,7 +2206,7 @@ static inline void connect_model(FmDesktop* desktop)
 
 static inline void disconnect_model(FmDesktop* desktop)
 {
-    g_signal_handlers_disconnect_by_func(app_config, on_big_icon_size_changed, desktop->model);
+    g_signal_handlers_disconnect_by_func(app_config, on_desktop_icon_size_changed, desktop->model);
     g_signal_handlers_disconnect_by_func(desktop->model, on_row_deleting, desktop);
     g_signal_handlers_disconnect_by_func(desktop->model, on_row_inserted, desktop);
     g_signal_handlers_disconnect_by_func(desktop->model, on_row_deleted, desktop);
@@ -2302,7 +2302,7 @@ static GObject* fm_desktop_constructor(GType type, guint n_construct_properties,
     self->icon_render = fm_cell_renderer_pixbuf_new();
     g_object_set(self->icon_render, "follow-state", TRUE, NULL);
     g_object_ref_sink(self->icon_render);
-    fm_cell_renderer_pixbuf_set_fixed_size(FM_CELL_RENDERER_PIXBUF(self->icon_render), fm_config->big_icon_size, fm_config->big_icon_size);
+    fm_cell_renderer_pixbuf_set_fixed_size(FM_CELL_RENDERER_PIXBUF(self->icon_render), app_config->desktop_icon_size, app_config->desktop_icon_size);
 
     /* FIXME: call pango_layout_context_changed() on the layout in response to the
      * "style-set" and "direction-changed" signals for the widget. */
