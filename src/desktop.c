@@ -835,8 +835,9 @@ static void on_rows_reordered(FmFolderModel* model, GtkTreePath* parent_tp, GtkT
 static void update_working_area(FmDesktop* desktop)
 {
     GdkScreen* screen = gtk_widget_get_screen((GtkWidget*)desktop);
+    GdkRectangle result;
 #if GTK_CHECK_VERSION(3, 4, 0)
-    gdk_screen_get_monitor_workarea(screen, desktop->monitor, &desktop->working_area);
+    gdk_screen_get_monitor_workarea(screen, desktop->monitor, &result);
 #else
     GdkWindow* root = gdk_screen_get_root_window(screen);
     Atom ret_type;
@@ -846,8 +847,8 @@ static void update_working_area(FmDesktop* desktop)
     guint32 n_desktops, cur_desktop;
     gulong* working_area;
 
-    /* default to screen size */
-    gdk_screen_get_monitor_geometry(screen, desktop->monitor, &desktop->working_area);
+    GdkRectangle monitor_geometry;
+    gdk_screen_get_monitor_geometry(screen, desktop->monitor, &monitor_geometry);
 
     if(XGetWindowProperty(GDK_WINDOW_XDISPLAY(root), GDK_WINDOW_XID(root),
                        XA_NET_NUMBER_OF_DESKTOPS, 0, 1, False, XA_CARDINAL, &ret_type,
@@ -879,30 +880,51 @@ static void update_working_area(FmDesktop* desktop)
     }
     working_area = ((gulong*)prop) + cur_desktop * 4;
 
-    if((gint)working_area[0] > desktop->working_area.x &&
-       (gint)working_area[0] < desktop->working_area.x + desktop->working_area.width)
+    GdkRectangle wm_working_area;
+    wm_working_area.x      = (gint) working_area[0];
+    wm_working_area.y      = (gint) working_area[1];
+    wm_working_area.width  = (gint) working_area[2];
+    wm_working_area.height = (gint) working_area[3];
+
+    XFree(prop);
+
+    int monitor_geometry_right  = monitor_geometry.x + monitor_geometry.width;
+    int monitor_geometry_bottom = monitor_geometry.y + monitor_geometry.height;
+
+    int wm_working_area_right  = wm_working_area.x + wm_working_area.width;
+    int wm_working_area_bottom = wm_working_area.y + wm_working_area.height;
+
+    int left   = MAX(monitor_geometry.x, wm_working_area.x);
+    int top    = MAX(monitor_geometry.y, wm_working_area.y);
+    int right  = MIN(monitor_geometry_right, wm_working_area_right);
+    int bottom = MIN(monitor_geometry_bottom, wm_working_area_bottom);
+
+    result.x      = left;
+    result.y      = top;
+    result.width  = right - left;
+    result.height = bottom - top;
+
+    if (result.width < 1 || result.height < 1)
+        result = monitor_geometry;
+
+    result.x -= monitor_geometry.x;
+    result.y -= monitor_geometry.y;
+
+_out:
+#endif
+
+    if (desktop->working_area.x != result.x
+    ||  desktop->working_area.y != result.y
+    ||  desktop->working_area.width != result.width
+    ||  desktop->working_area.height != result.height)
     {
-        desktop->working_area.width -= (working_area[0] - desktop->working_area.x);
-        desktop->working_area.x = (gint)working_area[0];
+        desktop->working_area = result;
+        queue_layout_items(desktop);
     }
-    if((gint)working_area[1] > desktop->working_area.y &&
-       (gint)working_area[1] < desktop->working_area.y + desktop->working_area.height)
-    {
-        desktop->working_area.height -= (working_area[1] - desktop->working_area.y);
-        desktop->working_area.y = (gint)working_area[1];
-    }
-    if((gint)(working_area[0] + working_area[2]) < desktop->working_area.x + desktop->working_area.width)
-        desktop->working_area.width = working_area[0] + working_area[2] - desktop->working_area.x;
-    if((gint)(working_area[1] + working_area[3]) < desktop->working_area.y + desktop->working_area.height)
-        desktop->working_area.height = working_area[1] + working_area[3] - desktop->working_area.y;
+
     g_debug("got working area: %d.%d.%d.%d", desktop->working_area.x, desktop->working_area.y,
             desktop->working_area.width, desktop->working_area.height);
 
-    XFree(prop);
-_out:
-#endif
-    queue_layout_items(desktop);
-    return;
 }
 
 static GdkFilterReturn on_root_event(GdkXEvent *xevent, GdkEvent *event, gpointer data)
