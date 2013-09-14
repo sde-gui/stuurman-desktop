@@ -2215,6 +2215,8 @@ static inline void connect_model(FmDesktop* desktop)
     g_signal_connect(desktop_folder, "start-loading", G_CALLBACK(on_folder_start_loading), desktop);
     g_signal_connect(desktop_folder, "finish-loading", G_CALLBACK(on_folder_finish_loading), desktop);
     g_signal_connect(desktop_folder, "error", G_CALLBACK(on_folder_error), desktop);
+
+    fm_folder_reload(desktop_folder);
 }
 
 static inline void disconnect_model(FmDesktop* desktop)
