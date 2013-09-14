@@ -138,17 +138,13 @@ static void on_snap_to_grid(GtkAction* act, gpointer user_data);
 
 static char* get_config_file(FmDesktop* desktop, gboolean create_dir)
 {
-    char *dir, *path;
-    guint i;
+    int screen_n = gdk_screen_get_number(gtk_widget_get_screen(GTK_WIDGET(desktop)));
 
-    for(i = 0; i < n_screens; i++)
-        if(desktops[i] == desktop)
-            break;
-    if(i >= n_screens)
-        return NULL;
-    dir = pcmanfm_get_profile_dir(create_dir);
-    path = g_strdup_printf("%s/desktop-items-%u.conf", dir, i);
+    gchar * dir = pcmanfm_get_profile_dir(create_dir);
+    gchar * path = g_strdup_printf("%s/desktop-items-%u-%u.conf", dir, screen_n, desktop->monitor);
+
     g_free(dir);
+
     return path;
 }
 
