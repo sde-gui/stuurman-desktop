@@ -53,37 +53,6 @@ static void on_wallpaper_changed(FmConfig* cfg, gpointer user_data)
             wallpaper_manager_update_background(desktops[i], i);
 }
 
-static void on_desktop_font_changed(FmConfig* cfg, gpointer user_data)
-{
-    /* FIXME: this is a little bit dirty */
-    if(font_desc)
-        pango_font_description_free(font_desc);
-
-    if(app_config->desktop_font)
-    {
-        font_desc = pango_font_description_from_string(app_config->desktop_font);
-        if(font_desc)
-        {
-            guint i;
-            for(i=0; i < n_screens; ++i)
-            {
-                FmDesktop* desktop = desktops[i];
-                PangoContext* pc;
-                if(desktop->monitor < 0)
-                    continue;
-                pc = gtk_widget_get_pango_context((GtkWidget*)desktop);
-                pango_context_set_font_description(pc, font_desc);
-                pango_layout_context_changed(desktop->pl);
-                gtk_widget_queue_resize(GTK_WIDGET(desktop));
-                /* layout_items(desktop); */
-                /* gtk_widget_queue_draw(desktops[i]); */
-            }
-        }
-    }
-    else
-        font_desc = NULL;
-}
-
 void reload_icons()
 {
     guint i;
@@ -96,10 +65,6 @@ static void on_icon_theme_changed(GtkIconTheme* theme, gpointer user_data)
 {
     reload_icons();
 }
-
-
-
-
 
 void fm_desktop_manager_init(gint on_screen)
 {
@@ -151,8 +116,6 @@ void fm_desktop_manager_init(gint on_screen)
     }
 
     wallpaper_changed = g_signal_connect(app_config, "changed::wallpaper", G_CALLBACK(on_wallpaper_changed), NULL);
-    desktop_font_changed = g_signal_connect(app_config, "changed::desktop_font", G_CALLBACK(on_desktop_font_changed), NULL);
-
     icon_theme_changed = g_signal_connect(gtk_icon_theme_get_default(), "changed", G_CALLBACK(on_icon_theme_changed), NULL);
 
     pcmanfm_ref();
@@ -184,8 +147,6 @@ void fm_desktop_manager_finalize()
     }
 
     g_signal_handler_disconnect(app_config, wallpaper_changed);
-    g_signal_handler_disconnect(app_config, desktop_font_changed);
-
     g_signal_handler_disconnect(gtk_icon_theme_get_default(), icon_theme_changed);
 
     if(acc_grp)

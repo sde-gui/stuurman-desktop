@@ -82,8 +82,6 @@ static guint desktop_font_changed = 0;
 static guint icon_theme_changed = 0;
 static GtkAccelGroup* acc_grp = NULL;
 
-static PangoFontDescription* font_desc = NULL;
-
 static FmFolder* desktop_folder = NULL;
 
 */
@@ -1827,8 +1825,8 @@ static void on_style_set(GtkWidget* w, GtkStyle* prev)
 {
     FmDesktop* self = (FmDesktop*)w;
     PangoContext* pc = gtk_widget_get_pango_context(w);
-    if(font_desc)
-        pango_context_set_font_description(pc, font_desc);
+    if (self->font_desc)
+        pango_context_set_font_description(pc, self->font_desc);
     pango_layout_context_changed(self->pl);
 }
 
@@ -2075,6 +2073,26 @@ static void on_dnd_src_data_get(FmDndSrc* ds, FmDesktop* desktop)
 
 /****************************************************************************/
 
+static void on_desktop_font_changed(FmConfig* cfg, FmDesktop* desktop)
+{
+    if (desktop->font_desc)
+        pango_font_description_free(desktop->font_desc);
+
+    desktop->font_desc = NULL;
+
+    if (app_config->desktop_font)
+    {
+        desktop->font_desc = pango_font_description_from_string(app_config->desktop_font);
+        if (desktop->font_desc)
+        {
+                PangoContext* pc = gtk_widget_get_pango_context(GTK_WIDGET(desktop));
+                pango_context_set_font_description(pc, desktop->font_desc);
+                pango_layout_context_changed(desktop->pl);
+                gtk_widget_queue_resize(GTK_WIDGET(desktop));
+        }
+    }
+}
+
 static void on_desktop_text_changed(FmConfig* cfg, FmDesktop* desktop)
 {
     gtk_widget_queue_draw(GTK_WIDGET(desktop));
@@ -2185,6 +2203,7 @@ static void fm_desktop_destroy(GtkObject *object)
 
         g_signal_handlers_disconnect_by_func(app_config, on_arrange_icons_rtl_changed, self);
         g_signal_handlers_disconnect_by_func(app_config, on_arrange_icons_in_rows_changed, self);
+        g_signal_handlers_disconnect_by_func(app_config, on_desktop_font_changed, self);
         g_signal_handlers_disconnect_by_func(app_config, on_desktop_text_changed, self);
 
         gtk_window_group_remove_window(win_group, (GtkWindow*)self);
@@ -2301,6 +2320,7 @@ static GObject* fm_desktop_constructor(GType type, guint n_construct_properties,
 
     g_signal_connect(app_config, "changed::arrange_icons_rtl", G_CALLBACK(on_arrange_icons_rtl_changed), self);
     g_signal_connect(app_config, "changed::arrange_icons_in_rows", G_CALLBACK(on_arrange_icons_in_rows_changed), self);
+    g_signal_connect(app_config, "changed::desktop_font", G_CALLBACK(on_desktop_font_changed), self);
     g_signal_connect(app_config, "changed::desktop_text", G_CALLBACK(on_desktop_text_changed), self);
 
     return object;

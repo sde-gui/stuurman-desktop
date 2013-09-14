@@ -78,6 +78,7 @@ struct _FmDesktop
     FmFolderModel* model;
     guint cur_desktop;
     gint monitor;
+    PangoFontDescription* font_desc;
 };
 
 struct _FmDesktopClass
