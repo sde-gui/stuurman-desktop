@@ -88,11 +88,6 @@ struct _FmDesktopClass
 GType       fm_desktop_get_type     (void);
 FmDesktop*  fm_desktop_new          (GdkScreen* screen, gint monitor);
 
-FmDesktop*  fm_desktop_get          (guint screen, guint monitor);
-
-void fm_desktop_manager_init(gint on_screen);
-void fm_desktop_manager_finalize();
-
 G_END_DECLS
 
 #endif /* __DESKTOP_H__ */

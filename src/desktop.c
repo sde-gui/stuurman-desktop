@@ -25,6 +25,7 @@
 #endif
 
 #include "desktop.h"
+#include "desktop-manager.h"
 #include "pcmanfm.h"
 #include "app-config.h"
 #include "wallpaper-manager.h"
@@ -73,6 +74,7 @@ static void fm_desktop_view_init(FmFolderViewInterface* iface);
 G_DEFINE_TYPE_WITH_CODE(FmDesktop, fm_desktop, GTK_TYPE_WINDOW,
                         G_IMPLEMENT_INTERFACE(FM_TYPE_FOLDER_VIEW, fm_desktop_view_init))
 
+/*
 static GtkWindowGroup* win_group = NULL;
 static FmDesktop **desktops = NULL;
 static guint n_screens = 0;
@@ -85,6 +87,9 @@ static GtkAccelGroup* acc_grp = NULL;
 static PangoFontDescription* font_desc = NULL;
 
 static FmFolder* desktop_folder = NULL;
+
+*/
+
 
 static Atom XA_NET_WORKAREA = 0;
 static Atom XA_NET_NUMBER_OF_DESKTOPS = 0;
@@ -202,7 +207,7 @@ static void calc_item_size(FmDesktop* desktop, FmDesktopItem* item, GdkPixbuf* i
     item->text_rect.height = rc2.height + 4;
 }
 
-static inline void load_items(FmDesktop* desktop)
+void load_items(FmDesktop* desktop)
 {
     GtkTreeIter it;
     char* path;
@@ -244,7 +249,7 @@ static inline void load_items(FmDesktop* desktop)
     queue_layout_items(desktop);
 }
 
-static inline void unload_items(FmDesktop* desktop)
+void unload_items(FmDesktop* desktop)
 {
     /* remove existing fixed items */
     g_list_free(desktop->fixed_items);
@@ -274,7 +279,7 @@ static gint get_desktop_for_root_window(GdkWindow *root)
 }
 
 /* save position of desktop icons */
-static void save_item_pos(FmDesktop* desktop)
+void save_item_pos(FmDesktop* desktop)
 {
     GList* l;
     GString* buf;
@@ -756,43 +761,6 @@ static void paint_rubber_banding_rect(FmDesktop* self, cairo_t* cr, GdkRectangle
 /* ---------------------------------------------------------------------
     FmFolder signal handlers */
 
-static void on_folder_start_loading(FmFolder* folder, gpointer user_data)
-{
-    /* FIXME: should we delete the model here? */
-}
-
-
-static void on_folder_finish_loading(FmFolder* folder, gpointer user_data)
-{
-    guint i;
-    /* FIXME: we need to free old positions first?? */
-
-    /* the desktop folder is just loaded, apply desktop items and positions */
-    for(i = 0; i < n_screens; i++)
-    {
-        FmDesktop* desktop = desktops[i];
-        if(desktop->monitor < 0)
-            continue;
-        unload_items(desktop);
-        load_items(desktop);
-    }
-}
-
-static FmJobErrorAction on_folder_error(FmFolder* folder, GError* err, FmJobErrorSeverity severity, gpointer user_data)
-{
-    if(err->domain == G_IO_ERROR)
-    {
-        if(err->code == G_IO_ERROR_NOT_MOUNTED && severity < FM_JOB_ERROR_CRITICAL)
-        {
-            FmPath* path = fm_folder_get_path(folder);
-            if(fm_mount_path(NULL, path, TRUE))
-                return FM_JOB_RETRY;
-        }
-    }
-    fm_show_error(NULL, NULL, err->message);
-    return FM_JOB_CONTINUE;
-}
-
 
 /* ---------------------------------------------------------------------
     FmFolderModel signal handlers */
@@ -967,74 +935,6 @@ static void on_screen_size_changed(GdkScreen* screen, FmDesktop* desktop)
     gdk_screen_get_monitor_geometry(screen, desktop->monitor, &geom);
     gtk_window_resize((GtkWindow*)desktop, geom.width, geom.height);
 }
-
-static void on_wallpaper_changed(FmConfig* cfg, gpointer user_data)
-{
-    guint i;
-    for(i=0; i < n_screens; ++i)
-        if(desktops[i]->monitor >= 0)
-            wallpaper_manager_update_background(desktops[i], i);
-}
-
-static void on_desktop_text_changed(FmConfig* cfg, gpointer user_data)
-{
-    guint i;
-    /* FIXME: we only need to redraw text lables */
-    for(i=0; i < n_screens; ++i)
-        if(desktops[i]->monitor >= 0)
-            gtk_widget_queue_draw(GTK_WIDGET(desktops[i]));
-}
-
-static void on_desktop_font_changed(FmConfig* cfg, gpointer user_data)
-{
-    /* FIXME: this is a little bit dirty */
-    if(font_desc)
-        pango_font_description_free(font_desc);
-
-    if(app_config->desktop_font)
-    {
-        font_desc = pango_font_description_from_string(app_config->desktop_font);
-        if(font_desc)
-        {
-            guint i;
-            for(i=0; i < n_screens; ++i)
-            {
-                FmDesktop* desktop = desktops[i];
-                PangoContext* pc;
-                if(desktop->monitor < 0)
-                    continue;
-                pc = gtk_widget_get_pango_context((GtkWidget*)desktop);
-                pango_context_set_font_description(pc, font_desc);
-                pango_layout_context_changed(desktop->pl);
-                gtk_widget_queue_resize(GTK_WIDGET(desktop));
-                /* layout_items(desktop); */
-                /* gtk_widget_queue_draw(desktops[i]); */
-            }
-        }
-    }
-    else
-        font_desc = NULL;
-}
-
-static void reload_icons()
-{
-    guint i;
-    for(i=0; i < n_screens; ++i)
-        if(desktops[i]->monitor >= 0)
-            gtk_widget_queue_resize(GTK_WIDGET(desktops[i]));
-}
-
-static void on_desktop_icon_size_changed(FmConfig* cfg, FmFolderModel* model)
-{
-    fm_folder_model_set_icon_size(model, app_config->desktop_icon_size);
-    reload_icons();
-}
-
-static void on_icon_theme_changed(GtkIconTheme* theme, gpointer user_data)
-{
-    reload_icons();
-}
-
 
 /* ---------------------------------------------------------------------
     Popup handlers */
@@ -1754,6 +1654,8 @@ static gboolean on_motion_notify(GtkWidget* w, GdkEventMotion* evt)
             }
             if(item)
             {
+                if (!hand_cursor)
+                    hand_cursor = gdk_cursor_new(GDK_HAND2);
                 gdk_window_set_cursor(window, hand_cursor);
                 /* FIXME: timeout should be customizable */
                 if(self->single_click_timeout_handler == 0)
@@ -2176,6 +2078,22 @@ static void on_dnd_src_data_get(FmDndSrc* ds, FmDesktop* desktop)
     }
 }
 
+
+/****************************************************************************/
+
+static void on_desktop_text_changed(FmConfig* cfg, FmDesktop* desktop)
+{
+    gtk_widget_queue_draw(GTK_WIDGET(desktop));
+}
+
+static void on_desktop_icon_size_changed(FmConfig* cfg, FmFolderModel* model)
+{
+    fm_folder_model_set_icon_size(model, app_config->desktop_icon_size);
+    reload_icons();
+}
+
+/****************************************************************************/
+
 /* ---------------------------------------------------------------------
     FmDesktop class main handlers */
 
@@ -2235,6 +2153,7 @@ static void fm_desktop_destroy(GtkObject *object)
 
         g_signal_handlers_disconnect_by_func(app_config, on_arrange_icons_rtl_changed, self);
         g_signal_handlers_disconnect_by_func(app_config, on_arrange_icons_in_rows_changed, self);
+        g_signal_handlers_disconnect_by_func(app_config, on_desktop_text_changed, self);
 
         gtk_window_group_remove_window(win_group, (GtkWindow*)self);
 
@@ -2347,18 +2266,17 @@ static GObject* fm_desktop_constructor(GType type, guint n_construct_properties,
     fm_folder_view_add_popup(FM_FOLDER_VIEW(self), GTK_WINDOW(self),
                              fm_desktop_update_popup);
 
-    hand_cursor = gdk_cursor_new(GDK_HAND2);
 
-    g_signal_connect(app_config, "changed::arrange_icons_rtl",
-                     G_CALLBACK(on_arrange_icons_rtl_changed), self);
-    g_signal_connect(app_config, "changed::arrange_icons_in_rows",
-                     G_CALLBACK(on_arrange_icons_in_rows_changed), self);
+    g_signal_connect(app_config, "changed::arrange_icons_rtl", G_CALLBACK(on_arrange_icons_rtl_changed), self);
+    g_signal_connect(app_config, "changed::arrange_icons_in_rows", G_CALLBACK(on_arrange_icons_in_rows_changed), self);
+    g_signal_connect(app_config, "changed::desktop_text", G_CALLBACK(on_desktop_text_changed), self);
 
     return object;
 }
 
 FmDesktop *fm_desktop_new(GdkScreen* screen, gint monitor)
 {
+    g_debug("creating FmDesktop on screen %d, monitor %d", gdk_screen_get_number(screen), monitor);
     return g_object_new(FM_TYPE_DESKTOP, "screen", screen, "monitor", monitor, NULL);
 }
 
@@ -2664,130 +2582,3 @@ static void fm_desktop_view_init(FmFolderViewInterface* iface)
 }
 
 
-/* ---------------------------------------------------------------------
-    Interface functions */
-
-void fm_desktop_manager_init(gint on_screen)
-{
-    GdkDisplay * gdpy;
-    guint i, n_scr, n_mon, scr, mon;
-    const char* desktop_path;
-
-    if(! win_group)
-        win_group = gtk_window_group_new();
-
-    /* create the ~/Desktop folder if it doesn't exist. */
-    desktop_path = g_get_user_special_dir(G_USER_DIRECTORY_DESKTOP);
-    /* FIXME: should we use a localized folder name instead? */
-    g_mkdir_with_parents(desktop_path, 0700); /* ensure the existance of Desktop folder. */
-    /* FIXME: should we store the desktop folder path in the annoying ~/.config/user-dirs.dirs file? */
-
-    /* FIXME: should add a possibility to use different folders on screens */
-    if(!desktop_folder)
-    {
-        desktop_folder = fm_folder_from_path(fm_path_get_desktop());
-        g_signal_connect(desktop_folder, "start-loading", G_CALLBACK(on_folder_start_loading), NULL);
-        g_signal_connect(desktop_folder, "finish-loading", G_CALLBACK(on_folder_finish_loading), NULL);
-        g_signal_connect(desktop_folder, "error", G_CALLBACK(on_folder_error), NULL);
-    }
-
-    if(app_config->desktop_font)
-        font_desc = pango_font_description_from_string(app_config->desktop_font);
-
-    wallpaper_manager_init();
-
-    gdpy = gdk_display_get_default();
-    n_scr = gdk_display_get_n_screens(gdpy);
-    n_screens = 0;
-    for(i = 0; i < n_scr; i++)
-        n_screens += gdk_screen_get_n_monitors(gdk_display_get_screen(gdpy, i));
-    desktops = g_new(FmDesktop*, n_screens);
-    for(scr = 0, i = 0; scr < n_scr; scr++)
-    {
-        GdkScreen* screen = gdk_display_get_screen(gdpy, scr);
-        n_mon = gdk_screen_get_n_monitors(screen);
-        for(mon = 0; mon < n_mon; mon++)
-        {
-            gint mon_init = (on_screen < 0 || on_screen == (int)scr) ? (int)mon : (mon ? -2 : -1);
-            GtkWidget* desktop = (GtkWidget*)fm_desktop_new(screen, mon_init);
-            desktops[i++] = (FmDesktop*)desktop;
-            if(mon_init < 0)
-                continue;
-            gtk_widget_realize(desktop);  /* without this, setting wallpaper won't work */
-            gtk_widget_show_all(desktop);
-            gdk_window_lower(gtk_widget_get_window(desktop));
-        }
-    }
-
-    wallpaper_changed = g_signal_connect(app_config, "changed::wallpaper", G_CALLBACK(on_wallpaper_changed), NULL);
-    desktop_text_changed = g_signal_connect(app_config, "changed::desktop_text", G_CALLBACK(on_desktop_text_changed), NULL);
-    desktop_font_changed = g_signal_connect(app_config, "changed::desktop_font", G_CALLBACK(on_desktop_font_changed), NULL);
-
-    icon_theme_changed = g_signal_connect(gtk_icon_theme_get_default(), "changed", G_CALLBACK(on_icon_theme_changed), NULL);
-
-    pcmanfm_ref();
-}
-
-void fm_desktop_manager_finalize()
-{
-    guint i;
-    for(i = 0; i < n_screens; i++)
-    {
-        if(desktops[i]->monitor >= 0)
-            save_item_pos(desktops[i]);
-        gtk_widget_destroy(GTK_WIDGET(desktops[i]));
-    }
-    g_free(desktops);
-    g_object_unref(win_group);
-    win_group = NULL;
-
-    if(desktop_folder)
-    {
-        g_signal_handlers_disconnect_by_func(desktop_folder, on_folder_start_loading, NULL);
-        g_signal_handlers_disconnect_by_func(desktop_folder, on_folder_finish_loading, NULL);
-        g_signal_handlers_disconnect_by_func(desktop_folder, on_folder_error, NULL);
-        g_object_unref(desktop_folder);
-        desktop_folder = NULL;
-    }
-
-    if(font_desc)
-    {
-        pango_font_description_free(font_desc);
-        font_desc = NULL;
-    }
-
-    g_signal_handler_disconnect(app_config, wallpaper_changed);
-    g_signal_handler_disconnect(app_config, desktop_text_changed);
-    g_signal_handler_disconnect(app_config, desktop_font_changed);
-
-    g_signal_handler_disconnect(gtk_icon_theme_get_default(), icon_theme_changed);
-
-    if(acc_grp)
-        g_object_unref(acc_grp);
-    acc_grp = NULL;
-
-    if(hand_cursor)
-    {
-        gdk_cursor_unref(hand_cursor);
-        hand_cursor = NULL;
-    }
-
-    wallpaper_manager_finalize();
-
-    pcmanfm_unref();
-}
-
-FmDesktop* fm_desktop_get(guint screen, guint monitor)
-{
-    guint i = 0, n = 0;
-    while(i < n_screens && n <= screen)
-    {
-        if(n == screen && desktops[i]->monitor == (gint)monitor)
-            return desktops[i];
-        i++;
-        if(i < n_screens &&
-           (desktops[i]->monitor == 0 || desktops[i]->monitor == -1))
-            n++;
-    }
-    return NULL;
-}

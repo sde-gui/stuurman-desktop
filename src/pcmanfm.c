@@ -39,6 +39,7 @@
 #include <libsmfm-gtk/fm-gtk.h>
 #include "app-config.h"
 #include "desktop.h"
+#include "desktop-manager.h"
 #include "pref.h"
 #include "pcmanfm.h"
 #include "single-inst.h"

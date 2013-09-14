@@ -14,6 +14,8 @@ stuurman_desktop_SOURCES = \
 	app-config.h \
 	desktop.c \
 	desktop.h \
+	desktop-manager.c \
+	desktop-manager.h \
 	wallpaper-manager.c \
 	wallpaper-manager.h \
 	pref.c \
