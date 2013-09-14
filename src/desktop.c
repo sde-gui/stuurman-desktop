@@ -2098,10 +2098,13 @@ static void on_desktop_text_changed(FmConfig* cfg, FmDesktop* desktop)
     gtk_widget_queue_draw(GTK_WIDGET(desktop));
 }
 
-static void on_desktop_icon_size_changed(FmConfig* cfg, FmFolderModel* model)
+static void on_desktop_icon_size_changed(FmConfig* cfg, FmDesktop* desktop)
 {
-    fm_folder_model_set_icon_size(model, app_config->desktop_icon_size);
-    reload_icons();
+    if (desktop->model)
+    {
+        fm_folder_model_set_icon_size(desktop->model, app_config->desktop_icon_size);
+        reload_icons();
+    }
 }
 
 /****************************************************************************/
@@ -2152,8 +2155,6 @@ static inline void connect_model(FmDesktop* desktop)
     /* FIXME: different screens should be able to use different models */
     desktop->model = fm_folder_model_new(desktop_folder, FALSE);
     fm_folder_model_set_icon_size(desktop->model, app_config->desktop_icon_size);
-    g_signal_connect(app_config, "changed::desktop_icon_size",
-                     G_CALLBACK(on_desktop_icon_size_changed), desktop->model);
     g_signal_connect(desktop->model, "row-deleting", G_CALLBACK(on_row_deleting), desktop);
     g_signal_connect(desktop->model, "row-inserted", G_CALLBACK(on_row_inserted), desktop);
     g_signal_connect(desktop->model, "row-deleted", G_CALLBACK(on_row_deleted), desktop);
@@ -2174,7 +2175,6 @@ static inline void disconnect_model(FmDesktop* desktop)
     g_signal_handlers_disconnect_by_func(desktop_folder, on_folder_finish_loading, desktop);
     g_signal_handlers_disconnect_by_func(desktop_folder, on_folder_error, desktop);
 
-    g_signal_handlers_disconnect_by_func(app_config, on_desktop_icon_size_changed, desktop->model);
     g_signal_handlers_disconnect_by_func(desktop->model, on_row_deleting, desktop);
     g_signal_handlers_disconnect_by_func(desktop->model, on_row_inserted, desktop);
     g_signal_handlers_disconnect_by_func(desktop->model, on_row_deleted, desktop);
@@ -2201,6 +2201,7 @@ static void fm_desktop_destroy(GtkObject *object)
 
         g_signal_handlers_disconnect_by_func(screen, on_screen_size_changed, self);
 
+        g_signal_handlers_disconnect_by_func(app_config, on_desktop_icon_size_changed, self);
         g_signal_handlers_disconnect_by_func(app_config, on_arrange_icons_rtl_changed, self);
         g_signal_handlers_disconnect_by_func(app_config, on_arrange_icons_in_rows_changed, self);
         g_signal_handlers_disconnect_by_func(app_config, on_desktop_font_changed, self);
@@ -2318,6 +2319,7 @@ static GObject* fm_desktop_constructor(GType type, guint n_construct_properties,
                              fm_desktop_update_popup);
 
 
+    g_signal_connect(app_config, "changed::desktop_icon_size", G_CALLBACK(on_desktop_icon_size_changed), self);
     g_signal_connect(app_config, "changed::arrange_icons_rtl", G_CALLBACK(on_arrange_icons_rtl_changed), self);
     g_signal_connect(app_config, "changed::arrange_icons_in_rows", G_CALLBACK(on_arrange_icons_in_rows_changed), self);
     g_signal_connect(app_config, "changed::desktop_font", G_CALLBACK(on_desktop_font_changed), self);
