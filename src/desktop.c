@@ -117,6 +117,14 @@ static void on_snap_to_grid(GtkAction* act, gpointer user_data);
 #include "desktop-ui.c"
 
 
+#define CONTINUE_IF_ITEM_IS_NULL(item) \
+    if (!item) \
+    {\
+        g_debug("item is NULL");\
+        continue;\
+    }\
+
+
 /* ---------------------------------------------------------------------
     Items management and common functions */
 
@@ -209,6 +217,7 @@ void load_items(FmDesktop* desktop)
             GdkPixbuf* icon = NULL;
 
             item = fm_folder_model_get_item_userdata(desktop->model, &it);
+            CONTINUE_IF_ITEM_IS_NULL(item);
             name = fm_file_info_get_name(item->fi);
             if(g_key_file_has_group(kf, name))
             {
@@ -311,6 +320,7 @@ static GList* get_selected_items(FmDesktop* desktop, int* n_items)
     if(gtk_tree_model_get_iter_first(model, &it)) do
     {
         FmDesktopItem* item = fm_folder_model_get_item_userdata(desktop->model, &it);
+        CONTINUE_IF_ITEM_IS_NULL(item);
         if(item->is_selected)
         {
             if(G_LIKELY(item != desktop->focus))
@@ -386,6 +396,8 @@ static void layout_items(FmDesktop* self)
         do
         {
             item = fm_folder_model_get_item_userdata(self->model, &it);
+            CONTINUE_IF_ITEM_IS_NULL(item);
+
             icon = NULL;
             gtk_tree_model_get(model, &it, COL_FILE_ICON, &icon, -1);
             if (item->fixed_pos)
@@ -432,6 +444,8 @@ _next_position:
         do
         {
             item = fm_folder_model_get_item_userdata(self->model, &it);
+            CONTINUE_IF_ITEM_IS_NULL(item);
+
             icon = NULL;
             gtk_tree_model_get(model, &it, COL_FILE_ICON, &icon, -1);
             if (item->fixed_pos)
@@ -687,6 +701,8 @@ static void update_rubberbanding(FmDesktop* self, int newx, int newy)
     if(gtk_tree_model_get_iter_first(model, &it)) do
     {
         FmDesktopItem* item = fm_folder_model_get_item_userdata(self->model, &it);
+        CONTINUE_IF_ITEM_IS_NULL(item);
+
         gboolean selected;
         if(gdk_rectangle_intersect(&new_rect, &item->icon_rect, NULL) ||
             gdk_rectangle_intersect(&new_rect, &item->text_rect, NULL))
@@ -794,14 +810,17 @@ static void on_row_deleted(FmFolderModel* mod, GtkTreePath* tp, FmDesktop* deskt
 
 static void on_row_changed(FmFolderModel* model, GtkTreePath* tp, GtkTreeIter* it, FmDesktop* desktop)
 {
-    FmDesktopItem* item = fm_folder_model_get_item_userdata(model, it);
+    do {
+        FmDesktopItem* item = fm_folder_model_get_item_userdata(model, it);
+        CONTINUE_IF_ITEM_IS_NULL(item);
 
-    fm_file_info_unref(item->fi);
-    gtk_tree_model_get(GTK_TREE_MODEL(model), it, COL_FILE_INFO, &item->fi, -1);
-    fm_file_info_ref(item->fi);
+        fm_file_info_unref(item->fi);
+        gtk_tree_model_get(GTK_TREE_MODEL(model), it, COL_FILE_INFO, &item->fi, -1);
+        fm_file_info_ref(item->fi);
 
-    redraw_item(desktop, item);
-    /* queue_layout_items(desktop); */
+        redraw_item(desktop, item);
+        /* queue_layout_items(desktop); */
+    } while (0);
 }
 
 static void on_rows_reordered(FmFolderModel* model, GtkTreePath* parent_tp, GtkTreeIter* parent_it, gpointer arg3, FmDesktop* desktop)
@@ -1107,6 +1126,7 @@ static FmDesktopItem* hit_test(FmDesktop* self, GtkTreeIter *it, int x, int y)
     if(gtk_tree_model_get_iter_first(model, it)) do
     {
         item = fm_folder_model_get_item_userdata(self->model, it);
+        CONTINUE_IF_ITEM_IS_NULL(item);
         if(is_point_in_rect(&item->icon_rect, x, y)
          || is_point_in_rect(&item->text_rect, x, y))
             return item;
@@ -1159,6 +1179,7 @@ static FmDesktopItem* get_nearest_item(FmDesktop* desktop, FmDesktopItem* item, 
     do
     {
         FmDesktopItem * item2 = fm_folder_model_get_item_userdata(desktop->model, &it);
+        CONTINUE_IF_ITEM_IS_NULL(item2);
         if (item2 == item)
             continue;
 
@@ -1197,6 +1218,7 @@ static gboolean has_selected_item(FmDesktop* desktop)
     if(gtk_tree_model_get_iter_first(model, &it)) do
     {
         FmDesktopItem* item = fm_folder_model_get_item_userdata(desktop->model, &it);
+        CONTINUE_IF_ITEM_IS_NULL(item);
         if(item->is_selected)
             return TRUE;
     }
@@ -1324,11 +1346,8 @@ static gboolean on_expose(GtkWidget* w, GdkEventExpose* evt)
     if(gtk_tree_model_get_iter_first(model, &it)) do
     {
         FmDesktopItem* item = fm_folder_model_get_item_userdata(self->model, &it);
-        if (!item)
-        {
-            g_debug("item is NULL");
-            continue;
-        }
+        CONTINUE_IF_ITEM_IS_NULL(item);
+
         GdkRectangle* intersect, tmp, tmp2;
         GdkPixbuf* icon = NULL;
         if(gdk_rectangle_intersect(&area, &item->icon_rect, &tmp))
@@ -1713,6 +1732,7 @@ static gboolean get_focused_item(FmDesktopItem* focus, GtkTreeModel* model, GtkT
     if(gtk_tree_model_get_iter_first(model, it)) do
     {
         item = fm_folder_model_get_item_userdata(FM_FOLDER_MODEL(model), it);
+        CONTINUE_IF_ITEM_IS_NULL(item);
         if(item == focus)
             return item->is_selected;
     }
@@ -2519,6 +2539,7 @@ static gint _count_selected_files(FmFolderView* fv)
     do
     {
         FmDesktopItem* item = fm_folder_model_get_item_userdata(desktop->model, &it);
+        CONTINUE_IF_ITEM_IS_NULL(item);
         if(item->is_selected)
             n++;
     }
@@ -2538,6 +2559,7 @@ static FmFileInfoList* _dup_selected_files(FmFolderView* fv)
     do
     {
         FmDesktopItem* item = fm_folder_model_get_item_userdata(desktop->model, &it);
+        CONTINUE_IF_ITEM_IS_NULL(item);
         if(item->is_selected)
         {
             if(!files)
@@ -2560,6 +2582,7 @@ static FmPathList* _dup_selected_file_paths(FmFolderView* fv)
     do
     {
         FmDesktopItem* item = fm_folder_model_get_item_userdata(desktop->model, &it);
+        CONTINUE_IF_ITEM_IS_NULL(item);
         if(item->is_selected)
         {
             if(!files)
@@ -2581,6 +2604,7 @@ static void _select_all(FmFolderView* fv)
     do
     {
         FmDesktopItem* item = fm_folder_model_get_item_userdata(desktop->model, &it);
+        CONTINUE_IF_ITEM_IS_NULL(item);
         if(!item->is_selected)
         {
             item->is_selected = TRUE;
@@ -2600,6 +2624,7 @@ static void _unselect_all(FmFolderView* fv)
     do
     {
         FmDesktopItem* item = fm_folder_model_get_item_userdata(desktop->model, &it);
+        CONTINUE_IF_ITEM_IS_NULL(item);
         if(item->is_selected)
         {
             item->is_selected = FALSE;
