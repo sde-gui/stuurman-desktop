@@ -2070,6 +2070,12 @@ static void on_dnd_src_data_get(FmDndSrc* ds, FmDesktop* desktop)
     }
 }
 
+/****************************************************************************/
+
+static void on_icon_theme_changed(GtkIconTheme* theme, FmDesktop* desktop)
+{
+    gtk_widget_queue_resize(GTK_WIDGET(desktop));
+}
 
 /****************************************************************************/
 
@@ -2103,7 +2109,7 @@ static void on_desktop_icon_size_changed(FmConfig* cfg, FmDesktop* desktop)
     if (desktop->model)
     {
         fm_folder_model_set_icon_size(desktop->model, app_config->desktop_icon_size);
-        reload_icons();
+        gtk_widget_queue_resize(GTK_WIDGET(desktop));
     }
 }
 
@@ -2196,6 +2202,10 @@ static void fm_desktop_destroy(GtkObject *object)
     self = FM_DESKTOP(object);
     if(self->model) /* see bug #3533958 by korzhpavel@SF */
     {
+
+        pango_font_description_free(self->font_desc);
+        self->font_desc = NULL;
+
         screen = gtk_widget_get_screen((GtkWidget*)self);
         gdk_window_remove_filter(gdk_screen_get_root_window(screen), on_root_event, self);
 
@@ -2206,6 +2216,8 @@ static void fm_desktop_destroy(GtkObject *object)
         g_signal_handlers_disconnect_by_func(app_config, on_arrange_icons_in_rows_changed, self);
         g_signal_handlers_disconnect_by_func(app_config, on_desktop_font_changed, self);
         g_signal_handlers_disconnect_by_func(app_config, on_desktop_text_changed, self);
+
+        g_signal_handlers_disconnect_by_func(gtk_icon_theme_get_default(), on_icon_theme_changed, self);
 
         gtk_window_group_remove_window(win_group, (GtkWindow*)self);
 
@@ -2324,6 +2336,8 @@ static GObject* fm_desktop_constructor(GType type, guint n_construct_properties,
     g_signal_connect(app_config, "changed::arrange_icons_in_rows", G_CALLBACK(on_arrange_icons_in_rows_changed), self);
     g_signal_connect(app_config, "changed::desktop_font", G_CALLBACK(on_desktop_font_changed), self);
     g_signal_connect(app_config, "changed::desktop_text", G_CALLBACK(on_desktop_text_changed), self);
+
+    g_signal_connect(gtk_icon_theme_get_default(), "changed", G_CALLBACK(on_icon_theme_changed), self);
 
     return object;
 }

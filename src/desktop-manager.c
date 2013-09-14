@@ -53,19 +53,6 @@ static void on_wallpaper_changed(FmConfig* cfg, gpointer user_data)
             wallpaper_manager_update_background(desktops[i], i);
 }
 
-void reload_icons()
-{
-    guint i;
-    for(i=0; i < n_screens; ++i)
-        if(desktops[i]->monitor >= 0)
-            gtk_widget_queue_resize(GTK_WIDGET(desktops[i]));
-}
-
-static void on_icon_theme_changed(GtkIconTheme* theme, gpointer user_data)
-{
-    reload_icons();
-}
-
 void fm_desktop_manager_init(gint on_screen)
 {
     GdkDisplay * gdpy;
@@ -86,9 +73,6 @@ void fm_desktop_manager_init(gint on_screen)
     {
         desktop_folder = fm_folder_from_path(fm_path_get_desktop());
     }
-
-    if(app_config->desktop_font)
-        font_desc = pango_font_description_from_string(app_config->desktop_font);
 
     wallpaper_manager_init();
 
@@ -116,7 +100,6 @@ void fm_desktop_manager_init(gint on_screen)
     }
 
     wallpaper_changed = g_signal_connect(app_config, "changed::wallpaper", G_CALLBACK(on_wallpaper_changed), NULL);
-    icon_theme_changed = g_signal_connect(gtk_icon_theme_get_default(), "changed", G_CALLBACK(on_icon_theme_changed), NULL);
 
     pcmanfm_ref();
 }
@@ -140,14 +123,7 @@ void fm_desktop_manager_finalize()
         desktop_folder = NULL;
     }
 
-    if(font_desc)
-    {
-        pango_font_description_free(font_desc);
-        font_desc = NULL;
-    }
-
     g_signal_handler_disconnect(app_config, wallpaper_changed);
-    g_signal_handler_disconnect(gtk_icon_theme_get_default(), icon_theme_changed);
 
     if(acc_grp)
         g_object_unref(acc_grp);

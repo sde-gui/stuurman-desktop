@@ -38,11 +38,7 @@ void fm_desktop_manager_finalize();
 
 GtkWindowGroup* win_group;
 guint wallpaper_changed;
-guint desktop_font_changed;
-guint icon_theme_changed;
 GtkAccelGroup* acc_grp;
-
-PangoFontDescription* font_desc;
 
 FmFolder* desktop_folder;
 
@@ -50,8 +46,6 @@ FmFolder* desktop_folder;
 void unload_items(FmDesktop* desktop);
 void load_items(FmDesktop* desktop);
 void save_item_pos(FmDesktop* desktop);
-void reload_icons();
-
 
 G_END_DECLS
 
