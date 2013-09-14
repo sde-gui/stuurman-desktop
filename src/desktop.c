@@ -151,7 +151,10 @@ static inline FmDesktopItem* desktop_item_new(FmFolderModel* model, GtkTreeIter*
 
 static inline void desktop_item_free(FmDesktopItem* item)
 {
-    if(item->fi)
+    if (!item)
+        return;
+
+    if (item->fi)
         fm_file_info_unref(item->fi);
     g_slice_free(FmDesktopItem, item);
 }
