@@ -76,8 +76,6 @@ G_DEFINE_TYPE_WITH_CODE(FmDesktop, fm_desktop, GTK_TYPE_WINDOW,
 
 /*
 static GtkWindowGroup* win_group = NULL;
-static FmDesktop **desktops = NULL;
-static guint n_screens = 0;
 static guint wallpaper_changed = 0;
 static guint desktop_text_changed = 0;
 static guint desktop_font_changed = 0;
@@ -2090,6 +2088,36 @@ static void on_desktop_icon_size_changed(FmConfig* cfg, FmFolderModel* model)
 
 /****************************************************************************/
 
+static void on_folder_start_loading(FmFolder* folder, FmDesktop* desktop)
+{
+    /* FIXME: should we delete the model here? */
+}
+
+static void on_folder_finish_loading(FmFolder* folder, FmDesktop* desktop)
+{
+    /* FIXME: we need to free old positions first?? */
+
+    unload_items(desktop);
+    load_items(desktop);
+}
+
+static FmJobErrorAction on_folder_error(FmFolder* folder, GError* err, FmJobErrorSeverity severity, FmDesktop* desktop)
+{
+    if(err->domain == G_IO_ERROR)
+    {
+        if(err->code == G_IO_ERROR_NOT_MOUNTED && severity < FM_JOB_ERROR_CRITICAL)
+        {
+            FmPath* path = fm_folder_get_path(folder);
+            if(fm_mount_path(NULL, path, TRUE))
+                return FM_JOB_RETRY;
+        }
+    }
+    fm_show_error(NULL, NULL, err->message);
+    return FM_JOB_CONTINUE;
+}
+
+/****************************************************************************/
+
 /* ---------------------------------------------------------------------
     FmDesktop class main handlers */
 
@@ -2116,10 +2144,18 @@ static inline void connect_model(FmDesktop* desktop)
     gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(desktop->model),
                                          app_config->desktop_sort_by,
                                          app_config->desktop_sort_type);
+
+    g_signal_connect(desktop_folder, "start-loading", G_CALLBACK(on_folder_start_loading), desktop);
+    g_signal_connect(desktop_folder, "finish-loading", G_CALLBACK(on_folder_finish_loading), desktop);
+    g_signal_connect(desktop_folder, "error", G_CALLBACK(on_folder_error), desktop);
 }
 
 static inline void disconnect_model(FmDesktop* desktop)
 {
+    g_signal_handlers_disconnect_by_func(desktop_folder, on_folder_start_loading, desktop);
+    g_signal_handlers_disconnect_by_func(desktop_folder, on_folder_finish_loading, desktop);
+    g_signal_handlers_disconnect_by_func(desktop_folder, on_folder_error, desktop);
+
     g_signal_handlers_disconnect_by_func(app_config, on_desktop_icon_size_changed, desktop->model);
     g_signal_handlers_disconnect_by_func(desktop->model, on_row_deleting, desktop);
     g_signal_handlers_disconnect_by_func(desktop->model, on_row_inserted, desktop);

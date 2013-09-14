@@ -42,45 +42,8 @@
 
 #include "gseal-gtk-compat.h"
 
-
-static void on_folder_start_loading(FmFolder* folder, gpointer user_data)
-{
-    /* FIXME: should we delete the model here? */
-}
-
-
-static void on_folder_finish_loading(FmFolder* folder, gpointer user_data)
-{
-    guint i;
-    /* FIXME: we need to free old positions first?? */
-
-    /* the desktop folder is just loaded, apply desktop items and positions */
-    for(i = 0; i < n_screens; i++)
-    {
-        FmDesktop* desktop = desktops[i];
-        if(desktop->monitor < 0)
-            continue;
-        unload_items(desktop);
-        load_items(desktop);
-    }
-}
-
-static FmJobErrorAction on_folder_error(FmFolder* folder, GError* err, FmJobErrorSeverity severity, gpointer user_data)
-{
-    if(err->domain == G_IO_ERROR)
-    {
-        if(err->code == G_IO_ERROR_NOT_MOUNTED && severity < FM_JOB_ERROR_CRITICAL)
-        {
-            FmPath* path = fm_folder_get_path(folder);
-            if(fm_mount_path(NULL, path, TRUE))
-                return FM_JOB_RETRY;
-        }
-    }
-    fm_show_error(NULL, NULL, err->message);
-    return FM_JOB_CONTINUE;
-}
-
-
+static FmDesktop **desktops;
+static guint n_screens;
 
 static void on_wallpaper_changed(FmConfig* cfg, gpointer user_data)
 {
@@ -157,9 +120,6 @@ void fm_desktop_manager_init(gint on_screen)
     if(!desktop_folder)
     {
         desktop_folder = fm_folder_from_path(fm_path_get_desktop());
-        g_signal_connect(desktop_folder, "start-loading", G_CALLBACK(on_folder_start_loading), NULL);
-        g_signal_connect(desktop_folder, "finish-loading", G_CALLBACK(on_folder_finish_loading), NULL);
-        g_signal_connect(desktop_folder, "error", G_CALLBACK(on_folder_error), NULL);
     }
 
     if(app_config->desktop_font)
@@ -213,9 +173,6 @@ void fm_desktop_manager_finalize()
 
     if(desktop_folder)
     {
-        g_signal_handlers_disconnect_by_func(desktop_folder, on_folder_start_loading, NULL);
-        g_signal_handlers_disconnect_by_func(desktop_folder, on_folder_finish_loading, NULL);
-        g_signal_handlers_disconnect_by_func(desktop_folder, on_folder_error, NULL);
         g_object_unref(desktop_folder);
         desktop_folder = NULL;
     }

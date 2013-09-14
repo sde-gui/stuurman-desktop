@@ -37,8 +37,6 @@ void fm_desktop_manager_finalize();
 
 
 GtkWindowGroup* win_group;
-FmDesktop **desktops;
-guint n_screens;
 guint wallpaper_changed;
 guint desktop_font_changed;
 guint icon_theme_changed;
