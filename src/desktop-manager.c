@@ -48,6 +48,8 @@ static guint wallpaper_changed;
 #define MAX_MONITORS 32
 static FmDesktop * desktop_slots[MAX_SCREENS][MAX_MONITORS];
 
+gulong monitors_changed_handler_ids[MAX_SCREENS];
+
 static void on_wallpaper_changed(FmConfig* cfg, gpointer user_data)
 {
     guint S, M;
@@ -66,10 +68,19 @@ static gboolean finalizing;
 static int _n_screens;
 static GdkDisplay * _display;
 
+static void update_desktop_slots(void);
+
 gboolean is_desktop_slot_managed(int S, int M)
 {
     if (finalizing)
+    {
+        if (monitors_changed_handler_ids[S])
+        {
+            g_signal_handler_disconnect(gdk_display_get_screen(_display, S), monitors_changed_handler_ids[S]);
+            monitors_changed_handler_ids[S] = 0;
+        }
         return FALSE;
+    }
 
     if (S >= _n_screens)
         return FALSE;
@@ -79,6 +90,13 @@ gboolean is_desktop_slot_managed(int S, int M)
         return FALSE;*/
 
     GdkScreen * screen = gdk_display_get_screen(_display, S);
+
+    if (!monitors_changed_handler_ids[S])
+    {
+        monitors_changed_handler_ids[S] =
+            g_signal_connect(screen, "monitors-changed", (GCallback) update_desktop_slots, NULL);
+    }
+
     if (M >= gdk_screen_get_n_monitors(screen))
         return FALSE;
 
