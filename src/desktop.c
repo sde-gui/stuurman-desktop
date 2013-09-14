@@ -1324,6 +1324,11 @@ static gboolean on_expose(GtkWidget* w, GdkEventExpose* evt)
     if(gtk_tree_model_get_iter_first(model, &it)) do
     {
         FmDesktopItem* item = fm_folder_model_get_item_userdata(self->model, &it);
+        if (!item)
+        {
+            g_debug("item is NULL");
+            continue;
+        }
         GdkRectangle* intersect, tmp, tmp2;
         GdkPixbuf* icon = NULL;
         if(gdk_rectangle_intersect(&area, &item->icon_rect, &tmp))
