@@ -74,18 +74,6 @@ static void fm_desktop_view_init(FmFolderViewInterface* iface);
 G_DEFINE_TYPE_WITH_CODE(FmDesktop, fm_desktop, GTK_TYPE_WINDOW,
                         G_IMPLEMENT_INTERFACE(FM_TYPE_FOLDER_VIEW, fm_desktop_view_init))
 
-/*
-static GtkWindowGroup* win_group = NULL;
-static guint wallpaper_changed = 0;
-static guint desktop_text_changed = 0;
-static guint desktop_font_changed = 0;
-static guint icon_theme_changed = 0;
-static GtkAccelGroup* acc_grp = NULL;
-
-static FmFolder* desktop_folder = NULL;
-
-*/
-
 
 static Atom XA_NET_WORKAREA = 0;
 static Atom XA_NET_NUMBER_OF_DESKTOPS = 0;

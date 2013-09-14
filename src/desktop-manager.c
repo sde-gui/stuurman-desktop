@@ -42,21 +42,84 @@
 
 #include "gseal-gtk-compat.h"
 
-static FmDesktop **desktops;
-static guint n_screens;
+static guint wallpaper_changed;
+
+#define MAX_SCREENS  8
+#define MAX_MONITORS 32
+static FmDesktop * desktop_slots[MAX_SCREENS][MAX_MONITORS];
 
 static void on_wallpaper_changed(FmConfig* cfg, gpointer user_data)
 {
-    guint i;
-    for(i=0; i < n_screens; ++i)
-        if(desktops[i]->monitor >= 0)
-            wallpaper_manager_update_background(desktops[i], i);
+    guint S, M;
+    for (S = 0; S < MAX_SCREENS; S++)
+    {
+        for (M = 0; M < MAX_MONITORS; M++)
+        {
+            if (desktop_slots[S][M])
+                wallpaper_manager_update_background(desktop_slots[S][M], M);
+        }
+    }
 }
 
-void fm_desktop_manager_init(gint on_screen)
+static gboolean finalizing;
+
+static int _n_screens;
+static GdkDisplay * _display;
+
+gboolean is_desktop_slot_managed(int S, int M)
 {
-    GdkDisplay * gdpy;
-    guint i, n_scr, n_mon, scr, mon;
+    if (finalizing)
+        return FALSE;
+
+    if (S >= _n_screens)
+        return FALSE;
+
+    /* FIXME: TBI
+    if (app_config->managed_screen >= 0 && app_config->managed_screen != S)
+        return FALSE;*/
+
+    GdkScreen * screen = gdk_display_get_screen(_display, S);
+    if (M >= gdk_screen_get_n_monitors(screen))
+        return FALSE;
+
+    return TRUE;
+}
+
+static void update_desktop_slots(void)
+{
+    _display = gdk_display_get_default();
+    _n_screens = gdk_display_get_n_screens(_display);
+
+    guint S, M;
+    for (S = 0; S < MAX_SCREENS; S++)
+    {
+        for (M = 0; M < MAX_MONITORS; M++)
+        {
+            if (is_desktop_slot_managed(S, M))
+            {
+                if (!desktop_slots[S][M])
+                {
+                    GtkWidget* desktop = (GtkWidget *) fm_desktop_new(gdk_display_get_screen(_display, S), M);
+                    desktop_slots[S][M] = (FmDesktop *) desktop;
+                    gtk_widget_realize(desktop);  /* without this, setting wallpaper won't work */
+                    gtk_widget_show_all(desktop);
+                    gdk_window_lower(gtk_widget_get_window(desktop));
+                }
+            }
+            else
+            {
+                if (desktop_slots[S][M])
+                {
+                    gtk_widget_destroy(GTK_WIDGET(desktop_slots[S][M]));
+                    desktop_slots[S][M] = NULL;
+                }
+            }
+        }
+    }
+}
+
+void fm_desktop_manager_init()
+{
     const char* desktop_path;
 
     if(! win_group)
@@ -76,28 +139,7 @@ void fm_desktop_manager_init(gint on_screen)
 
     wallpaper_manager_init();
 
-    gdpy = gdk_display_get_default();
-    n_scr = gdk_display_get_n_screens(gdpy);
-    n_screens = 0;
-    for(i = 0; i < n_scr; i++)
-        n_screens += gdk_screen_get_n_monitors(gdk_display_get_screen(gdpy, i));
-    desktops = g_new(FmDesktop*, n_screens);
-    for(scr = 0, i = 0; scr < n_scr; scr++)
-    {
-        GdkScreen* screen = gdk_display_get_screen(gdpy, scr);
-        n_mon = gdk_screen_get_n_monitors(screen);
-        for(mon = 0; mon < n_mon; mon++)
-        {
-            gint mon_init = (on_screen < 0 || on_screen == (int)scr) ? (int)mon : (mon ? -2 : -1);
-            GtkWidget* desktop = (GtkWidget*)fm_desktop_new(screen, mon_init);
-            desktops[i++] = (FmDesktop*)desktop;
-            if(mon_init < 0)
-                continue;
-            gtk_widget_realize(desktop);  /* without this, setting wallpaper won't work */
-            gtk_widget_show_all(desktop);
-            gdk_window_lower(gtk_widget_get_window(desktop));
-        }
-    }
+    update_desktop_slots();
 
     wallpaper_changed = g_signal_connect(app_config, "changed::wallpaper", G_CALLBACK(on_wallpaper_changed), NULL);
 
@@ -106,28 +148,19 @@ void fm_desktop_manager_init(gint on_screen)
 
 void fm_desktop_manager_finalize()
 {
-    guint i;
-    for(i = 0; i < n_screens; i++)
-    {
-        if(desktops[i]->monitor >= 0)
-            save_item_pos(desktops[i]);
-        gtk_widget_destroy(GTK_WIDGET(desktops[i]));
-    }
-    g_free(desktops);
+    finalizing = TRUE;
+    update_desktop_slots();
+
     g_object_unref(win_group);
     win_group = NULL;
 
-    if(desktop_folder)
+    if (desktop_folder)
     {
         g_object_unref(desktop_folder);
         desktop_folder = NULL;
     }
 
     g_signal_handler_disconnect(app_config, wallpaper_changed);
-
-    if(acc_grp)
-        g_object_unref(acc_grp);
-    acc_grp = NULL;
 
     wallpaper_manager_finalize();
 
@@ -136,15 +169,11 @@ void fm_desktop_manager_finalize()
 
 FmDesktop* fm_desktop_get(guint screen, guint monitor)
 {
-    guint i = 0, n = 0;
-    while(i < n_screens && n <= screen)
-    {
-        if(n == screen && desktops[i]->monitor == (gint)monitor)
-            return desktops[i];
-        i++;
-        if(i < n_screens &&
-           (desktops[i]->monitor == 0 || desktops[i]->monitor == -1))
-            n++;
-    }
-    return NULL;
+    if (screen >= MAX_SCREENS)
+        return NULL;
+
+    if (monitor >= MAX_MONITORS)
+        return NULL;
+
+    return desktop_slots[screen][monitor];
 }

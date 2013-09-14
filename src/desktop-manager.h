@@ -31,15 +31,12 @@ G_BEGIN_DECLS
 
 FmDesktop*  fm_desktop_get          (guint screen, guint monitor);
 
-void fm_desktop_manager_init(gint on_screen);
+void fm_desktop_manager_init();
 void fm_desktop_manager_finalize();
 
 
 
 GtkWindowGroup* win_group;
-guint wallpaper_changed;
-GtkAccelGroup* acc_grp;
-
 FmFolder* desktop_folder;
 
 
