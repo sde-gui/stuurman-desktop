@@ -913,7 +913,14 @@ static void on_screen_size_changed(GdkScreen* screen, FmDesktop* desktop)
 {
     GdkRectangle geom;
     gdk_screen_get_monitor_geometry(screen, desktop->monitor, &geom);
-    gtk_window_resize((GtkWindow*)desktop, geom.width, geom.height);
+    gtk_window_resize((GtkWindow *) desktop, geom.width, geom.height);
+    gtk_window_set_default_size((GtkWindow *) desktop, geom.width, geom.height);
+    gtk_window_move((GtkWindow *) desktop, geom.x, geom.y);
+}
+
+static void on_screen_monitors_changed(GdkScreen* screen, FmDesktop* desktop)
+{
+    on_screen_size_changed(screen, desktop);
 }
 
 /* ---------------------------------------------------------------------
@@ -2198,6 +2205,7 @@ static void fm_desktop_destroy(GtkObject *object)
         gdk_window_remove_filter(gdk_screen_get_root_window(screen), on_root_event, self);
 
         g_signal_handlers_disconnect_by_func(screen, on_screen_size_changed, self);
+        g_signal_handlers_disconnect_by_func(screen, on_screen_monitors_changed, self);
 
         g_signal_handlers_disconnect_by_func(app_config, on_desktop_icon_size_changed, self);
         g_signal_handlers_disconnect_by_func(app_config, on_arrange_icons_rtl_changed, self);
@@ -2287,6 +2295,7 @@ static GObject* fm_desktop_constructor(GType type, guint n_construct_properties,
     gdk_window_set_events(root, gdk_window_get_events(root)|GDK_PROPERTY_CHANGE_MASK);
     gdk_window_add_filter(root, on_root_event, self);
     g_signal_connect(screen, "size-changed", G_CALLBACK(on_screen_size_changed), self);
+    g_signal_connect(screen, "monitors-changed", G_CALLBACK(on_screen_monitors_changed), self);
 
     n = get_desktop_for_root_window(root);
     if(n < 0)
