@@ -58,6 +58,7 @@ struct _FmDesktop
     guint text_w;
     guint pango_text_h;
     guint pango_text_w;
+    guint pango_timestamp;
     guint cell_w;
     guint cell_h;
     GdkRectangle working_area;

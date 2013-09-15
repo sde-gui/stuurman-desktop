@@ -56,6 +56,10 @@ struct _FmDesktopItem
     int y;
     GdkRectangle icon_rect;
     GdkRectangle text_rect;
+
+    PangoRectangle text_pango_logical_rect;
+    guint pango_timestamp;
+
     gboolean is_special : 1; /* is this a special item like "My Computer", mounted volume, or "Trash" */
     gboolean is_mount : 1; /* is this a mounted volume*/
     gboolean is_selected : 1;
@@ -162,9 +166,6 @@ static inline void desktop_item_free(FmDesktopItem* item)
 
 static void calc_item_size(FmDesktop* desktop, FmDesktopItem* item, GdkPixbuf* icon)
 {
-    //int text_x, text_y, text_w, text_h;    /* Probably goes along with the FIXME in this function */
-    PangoRectangle rc, rc2;
-
     /* icon rect */
     if(icon)
     {
@@ -184,19 +185,26 @@ static void calc_item_size(FmDesktop* desktop, FmDesktopItem* item, GdkPixbuf* i
     }
 
     /* text label rect */
-    pango_layout_set_text(desktop->pl, NULL, 0);
-    /* FIXME: we should cache text_h * PANGO_SCALE and text_w * PANGO_SCALE */
-    pango_layout_set_height(desktop->pl, desktop->pango_text_h);
-    pango_layout_set_width(desktop->pl, desktop->pango_text_w);
-    pango_layout_set_text(desktop->pl, fm_file_info_get_disp_name(item->fi), -1);
 
-    pango_layout_get_pixel_extents(desktop->pl, &rc, &rc2);
-    pango_layout_set_text(desktop->pl, NULL, 0);
+    if (item->pango_timestamp != desktop->pango_timestamp)
+    {
+        item->pango_timestamp = desktop->pango_timestamp;
 
-    item->text_rect.x = item->x + (desktop->cell_w - rc2.width - 4) / 2;
-    item->text_rect.y = item->icon_rect.y + item->icon_rect.height + rc2.y;
-    item->text_rect.width = rc2.width + 4;
-    item->text_rect.height = rc2.height + 4;
+        pango_layout_set_text(desktop->pl, NULL, 0);
+
+        pango_layout_set_height(desktop->pl, desktop->pango_text_h);
+        pango_layout_set_width(desktop->pl, desktop->pango_text_w);
+        pango_layout_set_text(desktop->pl, fm_file_info_get_disp_name(item->fi), -1);
+
+        PangoRectangle _unused_rc;
+        pango_layout_get_pixel_extents(desktop->pl, &_unused_rc, &item->text_pango_logical_rect);
+        pango_layout_set_text(desktop->pl, NULL, 0);
+    }
+
+    item->text_rect.x = item->x + (desktop->cell_w - item->text_pango_logical_rect.width - 4) / 2;
+    item->text_rect.y = item->icon_rect.y + item->icon_rect.height + item->text_pango_logical_rect.y;
+    item->text_rect.width = item->text_pango_logical_rect.width + 4;
+    item->text_rect.height = item->text_pango_logical_rect.height + 4;
 }
 
 void load_items(FmDesktop* desktop)
@@ -1871,6 +1879,9 @@ static gboolean on_key_press(GtkWidget* w, GdkEventKey* evt)
 static void on_style_set(GtkWidget* w, GtkStyle* prev)
 {
     FmDesktop* self = (FmDesktop*)w;
+
+    self->pango_timestamp++;
+
     PangoContext* pc = gtk_widget_get_pango_context(w);
     if (self->font_desc)
         pango_context_set_font_description(pc, self->font_desc);
@@ -2128,6 +2139,8 @@ static void on_icon_theme_changed(GtkIconTheme* theme, FmDesktop* desktop)
 
 static void on_desktop_font_changed(FmConfig* cfg, FmDesktop* desktop)
 {
+    desktop->pango_timestamp++;
+
     if (desktop->font_desc)
         pango_font_description_free(desktop->font_desc);
 
@@ -2144,6 +2157,8 @@ static void on_desktop_font_changed(FmConfig* cfg, FmDesktop* desktop)
                 gtk_widget_queue_resize(GTK_WIDGET(desktop));
         }
     }
+
+    queue_layout_items(desktop);
 }
 
 static void on_desktop_text_changed(FmConfig* cfg, FmDesktop* desktop)
@@ -2350,6 +2365,8 @@ static GObject* fm_desktop_constructor(GType type, guint n_construct_properties,
     pango_layout_set_alignment(self->pl, PANGO_ALIGN_CENTER);
     pango_layout_set_ellipsize(self->pl, PANGO_ELLIPSIZE_END);
     pango_layout_set_wrap(self->pl, PANGO_WRAP_WORD_CHAR);
+
+    self->pango_timestamp = 1;
 
     root = gdk_screen_get_root_window(screen);
     gdk_window_set_events(root, gdk_window_get_events(root)|GDK_PROPERTY_CHANGE_MASK);
