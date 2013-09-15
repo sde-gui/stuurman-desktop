@@ -29,6 +29,7 @@
 #include "pcmanfm.h"
 #include "app-config.h"
 #include "wallpaper-manager.h"
+#include "window-tracker.h"
 
 #include <glib/gi18n.h>
 
@@ -368,7 +369,8 @@ static gboolean is_pos_occupied(FmDesktop* desktop, FmDesktopItem* item)
          ||gdk_rectangle_intersect(&rect, &item->text_rect, NULL))
             return TRUE;
     }
-    return FALSE;
+
+    return fm_window_tracker_test_overlap(&item->icon_rect) || fm_window_tracker_test_overlap(&item->text_rect);
 }
 
 static void layout_items(FmDesktop* self)
@@ -2158,6 +2160,11 @@ static void on_desktop_icon_size_changed(FmConfig* cfg, FmDesktop* desktop)
     }
 }
 
+static void on_overlap_state_changed(FmConfig* cfg, FmDesktop* desktop)
+{
+    queue_layout_items(desktop);
+}
+
 /****************************************************************************/
 
 static void on_folder_start_loading(FmFolder* folder, FmDesktop* desktop)
@@ -2264,6 +2271,7 @@ static void fm_desktop_destroy(GtkObject *object)
         g_signal_handlers_disconnect_by_func(app_config, on_arrange_icons_in_rows_changed, self);
         g_signal_handlers_disconnect_by_func(app_config, on_desktop_font_changed, self);
         g_signal_handlers_disconnect_by_func(app_config, on_desktop_text_changed, self);
+        g_signal_handlers_disconnect_by_func(app_config, on_overlap_state_changed, self);
 
         g_signal_handlers_disconnect_by_func(gtk_icon_theme_get_default(), on_icon_theme_changed, self);
 
@@ -2385,6 +2393,7 @@ static GObject* fm_desktop_constructor(GType type, guint n_construct_properties,
     g_signal_connect(app_config, "changed::arrange_icons_in_rows", G_CALLBACK(on_arrange_icons_in_rows_changed), self);
     g_signal_connect(app_config, "changed::desktop_font", G_CALLBACK(on_desktop_font_changed), self);
     g_signal_connect(app_config, "changed::desktop_text", G_CALLBACK(on_desktop_text_changed), self);
+    g_signal_connect(app_config, "changed::overlap_state", G_CALLBACK(on_overlap_state_changed), self);
 
     g_signal_connect(gtk_icon_theme_get_default(), "changed", G_CALLBACK(on_icon_theme_changed), self);
 

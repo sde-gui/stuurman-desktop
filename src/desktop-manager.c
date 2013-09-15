@@ -27,6 +27,7 @@
 #include "pcmanfm.h"
 #include "app-config.h"
 #include "wallpaper-manager.h"
+#include "window-tracker.h"
 
 #include <glib/gi18n.h>
 
@@ -155,6 +156,8 @@ void fm_desktop_manager_init()
         desktop_folder = fm_folder_from_path(fm_path_get_desktop());
     }
 
+    fm_window_tracker_initialize();
+
     wallpaper_manager_init();
 
     update_desktop_slots();
@@ -181,6 +184,8 @@ void fm_desktop_manager_finalize()
     g_signal_handler_disconnect(app_config, wallpaper_changed);
 
     wallpaper_manager_finalize();
+
+    fm_window_tracker_finalize();
 
     pcmanfm_unref();
 }

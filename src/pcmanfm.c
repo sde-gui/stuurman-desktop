@@ -35,6 +35,7 @@
 #include <sys/types.h>
 #include <signal.h>
 #include <unistd.h> /* for getcwd */
+#include <sde-utils-x11.h>
 
 #include <libsmfm-gtk/fm-gtk.h>
 #include "app-config.h"
@@ -151,6 +152,8 @@ int main(int argc, char** argv)
         g_error_free(err);
         return 1;
     }
+
+    su_x11_resolve_well_known_atoms(gdk_x11_get_default_xdisplay());
 
     /* ensure that there is only one instance of pcmanfm-desktop. */
     inst.prog_name = "stuurman-desktop";
