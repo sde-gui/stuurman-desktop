@@ -65,11 +65,11 @@ struct _FmDesktop
     FmDesktopItem* focus;
     FmDesktopItem* drop_hilight;
     FmDesktopItem* hover_item;
-    gint rubber_bending_x;
-    gint rubber_bending_y;
+    gint rubber_banding_x;
+    gint rubber_banding_y;
     gint drag_start_x;
     gint drag_start_y;
-    gboolean rubber_bending : 1;
+    gboolean rubber_banding : 1;
     gboolean button_pressed : 1;
     gboolean dragging : 1;
     guint idle_layout;

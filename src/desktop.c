@@ -693,7 +693,7 @@ static void update_rubberbanding(FmDesktop* self, int newx, int newy)
 
     window = gtk_widget_get_window(GTK_WIDGET(self));
 
-    calc_rubber_banding_rect(self, self->rubber_bending_x, self->rubber_bending_y, &old_rect);
+    calc_rubber_banding_rect(self, self->rubber_banding_x, self->rubber_banding_y, &old_rect);
     calc_rubber_banding_rect(self, newx, newy, &new_rect);
 
     gdk_window_invalidate_rect(window, &old_rect, FALSE);
@@ -707,8 +707,8 @@ static void update_rubberbanding(FmDesktop* self, int newx, int newy)
 
     gdk_region_destroy(region);
 */
-    self->rubber_bending_x = newx;
-    self->rubber_bending_y = newy;
+    self->rubber_banding_x = newx;
+    self->rubber_banding_y = newy;
 
     /* update selection */
     if(gtk_tree_model_get_iter_first(model, &it)) do
@@ -740,7 +740,7 @@ static void paint_rubber_banding_rect(FmDesktop* self, cairo_t* cr, GdkRectangle
     GdkColor clr;
     guchar alpha;
 
-    calc_rubber_banding_rect(self, self->rubber_bending_x, self->rubber_bending_y, &rect);
+    calc_rubber_banding_rect(self, self->rubber_banding_x, self->rubber_banding_y, &rect);
 
     if(rect.width <= 0 || rect.height <= 0)
         return;
@@ -1375,7 +1375,7 @@ static gboolean on_expose(GtkWidget* w, GdkEventExpose* evt)
     cr = gdk_cairo_create(gtk_widget_get_window(w));
     area = evt->area;
 #endif
-    if(self->rubber_bending)
+    if(self->rubber_banding)
         paint_rubber_banding_rect(self, cr, &area);
 
     if(gtk_tree_model_get_iter_first(model, &it)) do
@@ -1557,15 +1557,15 @@ static gboolean on_button_press(GtkWidget* w, GdkEventButton* evt)
                                                     G_SIGNAL_MATCH_DATA, 0, 0,
                                                     NULL, NULL, drag_data);
                 }
-                self->rubber_bending = TRUE;
+                self->rubber_banding = TRUE;
 
-                /* FIXME: if you foward the event here, this will break rubber bending... */
+                /* FIXME: if you foward the event here, this will break rubber banding... */
                 /* forward the event to root window */
                 /* forward_event_to_rootwin(gtk_widget_get_screen(w), evt); */
 
                 gtk_grab_add(w);
-                self->rubber_bending_x = evt->x;
-                self->rubber_bending_y = evt->y;
+                self->rubber_banding_x = evt->x;
+                self->rubber_banding_y = evt->y;
             }
         }
     }
@@ -1608,7 +1608,7 @@ static gboolean on_button_release(GtkWidget* w, GdkEventButton* evt)
 
     self->button_pressed = FALSE;
 
-    if(self->rubber_bending)
+    if(self->rubber_banding)
     {
         /* re-enable Gtk+ DnD callbacks again */
         gpointer drag_data = g_object_get_data(G_OBJECT(self),
@@ -1620,7 +1620,7 @@ static gboolean on_button_release(GtkWidget* w, GdkEventButton* evt)
         }
         update_rubberbanding(self, evt->x, evt->y);
         gtk_grab_remove(w);
-        self->rubber_bending = FALSE;
+        self->rubber_banding = FALSE;
     }
     else if(self->dragging)
     {
@@ -1721,7 +1721,7 @@ static gboolean on_motion_notify(GtkWidget* w, GdkEventMotion* evt)
     if(self->dragging)
     {
     }
-    else if(self->rubber_bending)
+    else if(self->rubber_banding)
     {
         update_rubberbanding(self, evt->x, evt->y);
     }
