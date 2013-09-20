@@ -49,6 +49,28 @@
 #define PADDING 6
 #define MARGIN  2
 
+typedef struct _cached_layout_image
+{
+    guint timestamp;
+    cairo_surface_t * surface;
+} cached_layout_image_t;
+
+static inline void cached_layout_image_invalidate(cached_layout_image_t * cache)
+{
+    if (cache->surface)
+    {
+        cairo_surface_destroy(cache->surface);
+        cache->surface = NULL;
+    }
+}
+
+static inline gboolean cached_layout_image_check_timestamp(cached_layout_image_t * cache, guint timestamp)
+{
+    if (cache->timestamp != timestamp)
+        cached_layout_image_invalidate(cache);
+    return cache->surface != NULL;
+}
+
 struct _FmDesktopItem
 {
     FmFileInfo* fi;
@@ -59,6 +81,9 @@ struct _FmDesktopItem
 
     PangoRectangle text_pango_logical_rect;
     guint pango_timestamp;
+
+    cached_layout_image_t cached_text;
+    cached_layout_image_t cached_text_shadow;
 
     gboolean is_special : 1; /* is this a special item like "My Computer", mounted volume, or "Trash" */
     gboolean is_mount : 1; /* is this a mounted volume*/
@@ -199,6 +224,9 @@ static void calc_item_size(FmDesktop* desktop, FmDesktopItem* item, GdkPixbuf* i
         PangoRectangle _unused_rc;
         pango_layout_get_pixel_extents(desktop->pl, &_unused_rc, &item->text_pango_logical_rect);
         pango_layout_set_text(desktop->pl, NULL, 0);
+
+        cached_layout_image_invalidate(&item->cached_text);
+        cached_layout_image_invalidate(&item->cached_text_shadow);
     }
 
     item->text_rect.x = item->x + (desktop->cell_w - item->text_pango_logical_rect.width - 4) / 2;
@@ -512,6 +540,88 @@ static void queue_layout_items(FmDesktop* desktop)
         desktop->idle_layout = g_idle_add((GSourceFunc)on_idle_layout, desktop);
 }
 
+static void paint_item_text(FmDesktop* self, FmDesktopItem* item, cached_layout_image_t * cache, float blur_radius, cairo_t* cr)
+{
+    cairo_save(cr);
+
+//g_print("%d, %d\n", item->text_pango_logical_rect.x, item->text_pango_logical_rect.y);
+
+    if (!cached_layout_image_check_timestamp(cache, self->pango_timestamp))
+    {
+        cache->timestamp = self->pango_timestamp;
+        g_debug("creating cached surface %dx%d", item->text_rect.width, item->text_rect.height);
+        cache->surface = cairo_surface_create_similar(cairo_get_target(cr),
+            //CAIRO_CONTENT_COLOR_ALPHA,
+            CAIRO_CONTENT_ALPHA,
+            item->text_rect.width + item->text_pango_logical_rect.x,
+            item->text_rect.height + item->text_pango_logical_rect.y);
+
+        cairo_t * cr2 = cairo_create(cache->surface);
+        cairo_set_source_rgb(cr2, 1, 1, 1);
+        cairo_move_to(cr2, 0, 0);
+        pango_cairo_update_layout(cr2, self->pl);
+        pango_cairo_show_layout(cr2, self->pl);
+
+        cairo_destroy(cr2);
+
+        if (blur_radius > 0)
+        {
+            cairo_surface_t * surface = cairo_surface_create_similar(cairo_get_target(cr),
+                //CAIRO_CONTENT_COLOR_ALPHA,
+                CAIRO_CONTENT_ALPHA,
+                item->text_rect.width + item->text_pango_logical_rect.x,
+                item->text_rect.height + item->text_pango_logical_rect.y);
+
+            cairo_t * cr3 = cairo_create(surface);
+            cairo_set_source_rgba(cr3, 1, 1, 1, 0.3);
+
+            float r = blur_radius;
+
+            cairo_mask_surface(cr3, cache->surface, 0, 0);
+            cairo_fill(cr3);
+
+            cairo_mask_surface(cr3, cache->surface, 0, r);
+            cairo_fill(cr3);
+
+            cairo_mask_surface(cr3, cache->surface, 0, -r);
+            cairo_fill(cr3);
+
+            cairo_mask_surface(cr3, cache->surface, r, 0);
+            cairo_fill(cr3);
+
+            cairo_mask_surface(cr3, cache->surface, -r, 0);
+            cairo_fill(cr3);
+
+            float c45 = 0.7 * r;
+
+            cairo_mask_surface(cr3, cache->surface, c45, c45);
+            cairo_fill(cr3);
+
+            cairo_mask_surface(cr3, cache->surface, c45, -c45);
+            cairo_fill(cr3);
+
+            cairo_mask_surface(cr3, cache->surface, -c45, c45);
+            cairo_fill(cr3);
+
+            cairo_mask_surface(cr3, cache->surface, -c45, -c45);
+            cairo_fill(cr3);
+
+            cairo_destroy(cr3);
+
+            cairo_surface_destroy(cache->surface);
+            cache->surface = surface;
+        }
+    }
+
+    double x, y;
+    cairo_get_current_point(cr, &x, &y);
+    cairo_mask_surface(cr, cache->surface, x, y);
+    cairo_fill(cr);
+
+    cairo_restore(cr);
+}
+
+
 static void paint_item(FmDesktop* self, FmDesktopItem* item, cairo_t* cr, GdkRectangle* expose_area, GdkPixbuf* icon)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
@@ -572,13 +682,16 @@ static void paint_item(FmDesktop* self, FmDesktopItem* item, cairo_t* cr, GdkRec
         /* the shadow */
         gdk_cairo_set_source_color(cr, &app_config->desktop_shadow);
         cairo_move_to(cr, text_x + 1, text_y + 1);
-        pango_cairo_show_layout(cr, self->pl);
+        //pango_cairo_show_layout(cr, self->pl);
+        paint_item_text(self, item, &item->cached_text_shadow, 0.7, cr);
         gdk_cairo_set_source_color(cr, &app_config->desktop_fg);
     }
+
     /* real text */
     cairo_move_to(cr, text_x, text_y);
     /* FIXME: should we check if pango is 1.10 at least? */
-    pango_cairo_show_layout(cr, self->pl);
+    //pango_cairo_show_layout(cr, self->pl);
+    paint_item_text(self, item, &item->cached_text, 0, cr);
     pango_layout_set_text(self->pl, NULL, 0);
 
     if (item == self->focus)
@@ -2413,6 +2526,8 @@ static GObject* fm_desktop_constructor(GType type, guint n_construct_properties,
     g_signal_connect(app_config, "changed::overlap_state", G_CALLBACK(on_overlap_state_changed), self);
 
     g_signal_connect(gtk_icon_theme_get_default(), "changed", G_CALLBACK(on_icon_theme_changed), self);
+
+    on_desktop_font_changed(NULL, self);
 
     return object;
 }
