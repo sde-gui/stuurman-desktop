@@ -2146,7 +2146,7 @@ static void on_drag_data_received (GtkWidget *dest_widget,
         return;
     }
 
-    if (drag_context->action != GDK_ACTION_MOVE)
+    if(gdk_drag_context_get_selected_action (drag_context) != GDK_ACTION_MOVE)
     {
         //gtk_drag_finish(drag_context, FALSE, FALSE, time);
         return;
@@ -2768,7 +2768,11 @@ void fm_desktop_manager_finalize()
 
     if(hand_cursor)
     {
+#if GTK_CHECK_VERSION(3, 0, 0)
+        g_object_unref(hand_cursor);
+#else
         gdk_cursor_unref(hand_cursor);
+#endif
         hand_cursor = NULL;
     }
 
