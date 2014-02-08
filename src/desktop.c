@@ -261,7 +261,7 @@ void load_items(FmDesktop* desktop)
             name = fm_file_info_get_name(item->fi);
             if(g_key_file_has_group(kf, name))
             {
-                gtk_tree_model_get(model, &it, COL_FILE_ICON, &icon, -1);
+                gtk_tree_model_get(model, &it, FM_FOLDER_MODEL_COL_ICON_WITH_THUMBNAIL, &icon, -1);
                 desktop->fixed_items = g_list_prepend(desktop->fixed_items, item);
                 item->fixed_pos = TRUE;
                 item->x = g_key_file_get_integer(kf, name, "x", NULL);
@@ -440,7 +440,7 @@ static void layout_items(FmDesktop* self)
             CONTINUE_IF_ITEM_IS_NULL(item);
 
             icon = NULL;
-            gtk_tree_model_get(model, &it, COL_FILE_ICON, &icon, -1);
+            gtk_tree_model_get(model, &it, FM_FOLDER_MODEL_COL_ICON_WITH_THUMBNAIL, &icon, -1);
             if (item->fixed_pos)
             {
                 calc_item_size(self, item, icon);
@@ -488,7 +488,7 @@ _next_position:
             CONTINUE_IF_ITEM_IS_NULL(item);
 
             icon = NULL;
-            gtk_tree_model_get(model, &it, COL_FILE_ICON, &icon, -1);
+            gtk_tree_model_get(model, &it, FM_FOLDER_MODEL_COL_ICON_WITH_THUMBNAIL, &icon, -1);
             if (item->fixed_pos)
                 calc_item_size(self, item, icon);
             else
@@ -1513,7 +1513,7 @@ static gboolean on_expose(GtkWidget* w, GdkEventExpose* evt)
 
         if(intersect)
         {
-            gtk_tree_model_get(model, &it, COL_FILE_ICON, &icon, -1);
+            gtk_tree_model_get(model, &it, FM_FOLDER_MODEL_COL_ICON_WITH_THUMBNAIL, &icon, -1);
             paint_item(self, item, cr, intersect, icon);
             if(icon)
                 g_object_unref(icon);
