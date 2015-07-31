@@ -2136,7 +2136,7 @@ static gboolean on_drag_motion (GtkWidget *dest_widget,
     FmDesktopItem* item;
     GtkTreeIter it;
 
-    g_print("on_drag_motion, self->dragging = %d\n", (int)desktop->dragging);
+    /*g_print("on_drag_motion, self->dragging = %d\n", (int)desktop->dragging);*/
 
     /* check if we're dragging over an item */
     item = hit_test(desktop, &it, x, y);
@@ -2162,7 +2162,6 @@ static gboolean on_drag_motion (GtkWidget *dest_widget,
         fm_dnd_dest_set_dest_file(desktop->dnd_dest,
                                   item ? item->fi : fm_folder_get_info(desktop_folder));
         target = gtk_drag_dest_find_target(dest_widget, drag_context, NULL);
-g_print("%s\n", gdk_atom_name(target));
         if(target != GDK_NONE &&
            fm_dnd_dest_is_target_supported(desktop->dnd_dest, target))
             action = fm_dnd_dest_get_default_action(desktop->dnd_dest, drag_context, target);
@@ -2187,7 +2186,7 @@ static void on_drag_leave (GtkWidget *dest_widget,
                            GdkDragContext *drag_context,
                            guint time)
 {
-    g_print("on_drag_leave\n");
+    /*g_print("on_drag_leave\n");*/
     FmDesktop* desktop = FM_DESKTOP(dest_widget);
 
     if(desktop->drop_hilight)
@@ -2202,7 +2201,7 @@ static gboolean on_drag_drop (GtkWidget *dest_widget,
                               GdkDragContext *drag_context,
                               gint x, gint y, guint time)
 {
-    g_print("on_drag_drop\n");
+    /*g_print("on_drag_drop\n");*/
 
     FmDesktop* desktop = FM_DESKTOP(dest_widget);
     FmDesktopItem* item;
@@ -2214,7 +2213,7 @@ static gboolean on_drag_drop (GtkWidget *dest_widget,
     if (desktop->dragging && item && item->is_selected)
         item = NULL;
 
-    g_print("item = %u\n", (unsigned)item);
+    /*g_print("item = %u\n", (unsigned)item);*/
 
     /* handle moving desktop items */
     if(!item)
@@ -2235,7 +2234,7 @@ static void on_drag_data_received (GtkWidget *dest_widget,
                                    gint x, gint y, GtkSelectionData *sel_data,
                                    guint info, guint time)
 {
-    g_print("on_drag_data_received\n");
+    /*g_print("on_drag_data_received\n");*/
     FmDesktop* desktop = FM_DESKTOP(dest_widget);
     GList *items, *l;
     int offset_x, offset_y;
@@ -2275,7 +2274,7 @@ static void on_drag_data_received (GtkWidget *dest_widget,
 
 static void on_dnd_src_data_get(FmDndSrc* ds, FmDesktop* desktop)
 {
-    g_print("on_dnd_src_data_get\n");
+    /*g_print("on_dnd_src_data_get\n");*/
     FmFileInfoList* files = _dup_selected_files(FM_FOLDER_VIEW(desktop));
     if(files)
     {
@@ -2767,7 +2766,7 @@ static gint _count_selected_files(FmFolderView* fv)
 
 static FmFileInfoList* _dup_selected_files(FmFolderView* fv)
 {
-    g_print("_dup_selected_files\n");
+    /*g_print("_dup_selected_files\n");*/
     FmDesktop* desktop = FM_DESKTOP(fv);
     FmFileInfoList* files = NULL;
     GtkTreeModel* model = GTK_TREE_MODEL(desktop->model);
