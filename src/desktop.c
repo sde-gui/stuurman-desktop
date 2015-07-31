@@ -143,6 +143,8 @@ static void on_open_folder_in_terminal(GtkAction* act, gpointer user_data);
 static void on_fix_pos(GtkToggleAction* act, gpointer user_data);
 static void on_snap_to_grid(GtkAction* act, gpointer user_data);
 
+static void on_show_icons(GtkToggleAction* act, gpointer user_data);
+
 /* insert GtkUIManager XML definitions */
 #include "desktop-ui.c"
 
@@ -798,6 +800,9 @@ static void calc_rubber_banding_rect(FmDesktop* self, int x, int y, GdkRectangle
 
 static void update_rubberbanding(FmDesktop* self, int newx, int newy)
 {
+    if (!app_config->show_icons)
+        return;
+
     GtkTreeModel* model = GTK_TREE_MODEL(self->model);
     GtkTreeIter it;
     GdkRectangle old_rect, new_rect;
@@ -1111,8 +1116,18 @@ static void fm_desktop_update_popup(FmFolderView* fv, GtkWindow* window,
     gtk_action_set_visible(act, FALSE);
     //gtk_action_group_remove_action(act_grp, act);
     gtk_action_group_set_translation_domain(act_grp, NULL);
-    gtk_action_group_add_actions(act_grp, desktop_actions,
-                                 G_N_ELEMENTS(desktop_actions), window);
+
+    gtk_action_group_add_actions(act_grp,
+        desktop_actions, G_N_ELEMENTS(desktop_actions), window);
+    gtk_action_group_add_toggle_actions(act_grp,
+        desktop_toggle_actions,
+        G_N_ELEMENTS(desktop_toggle_actions), fv);
+
+    {
+        GtkAction * action = gtk_action_group_get_action(act_grp, "ShowIcons");
+        gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(action), app_config->show_icons);
+    }
+
     gtk_ui_manager_add_ui_from_string(ui, desktop_menu_xml, -1, NULL);
 }
 
@@ -1258,6 +1273,16 @@ static void on_snap_to_grid(GtkAction* act, gpointer user_data)
     queue_layout_items(desktop);
 }
 
+static void on_show_icons(GtkToggleAction* act, gpointer user_data)
+{
+    gboolean show_icons = act ? gtk_toggle_action_get_active(act) : !app_config->show_icons;
+
+    if (app_config->show_icons == show_icons)
+        return;
+
+    app_config->show_icons = show_icons;
+    fm_config_emit_changed(fm_config, "show_icons");
+}
 
 /* ---------------------------------------------------------------------
     GtkWidget class default signal handlers */
@@ -1269,6 +1294,9 @@ static gboolean is_point_in_rect(GdkRectangle* rect, int x, int y)
 
 static FmDesktopItem* hit_test(FmDesktop* self, GtkTreeIter *it, int x, int y)
 {
+    if (!app_config->show_icons)
+        return NULL;
+
     FmDesktopItem* item;
     GtkTreeModel* model = GTK_TREE_MODEL(self->model);
     if(gtk_tree_model_get_iter_first(model, it)) do
@@ -1488,38 +1516,43 @@ static gboolean on_expose(GtkWidget* w, GdkEventExpose* evt)
     cr = gdk_cairo_create(gtk_widget_get_window(w));
     area = evt->area;
 #endif
-    if(self->rubber_banding)
-        paint_rubber_banding_rect(self, cr, &area);
 
-    if(gtk_tree_model_get_iter_first(model, &it)) do
+    if (app_config->show_icons)
     {
-        FmDesktopItem* item = fm_folder_model_get_item_userdata(self->model, &it);
-        CONTINUE_IF_ITEM_IS_NULL(item);
+        if(self->rubber_banding)
+            paint_rubber_banding_rect(self, cr, &area);
 
-        GdkRectangle* intersect, tmp, tmp2;
-        GdkPixbuf* icon = NULL;
-        if(gdk_rectangle_intersect(&area, &item->icon_rect, &tmp))
-            intersect = &tmp;
-        else
-            intersect = NULL;
-
-        if(gdk_rectangle_intersect(&area, &item->text_rect, &tmp2))
+        if(gtk_tree_model_get_iter_first(model, &it)) do
         {
-            if(intersect)
-                gdk_rectangle_union(intersect, &tmp2, intersect);
+            FmDesktopItem* item = fm_folder_model_get_item_userdata(self->model, &it);
+            CONTINUE_IF_ITEM_IS_NULL(item);
+
+            GdkRectangle* intersect, tmp, tmp2;
+            GdkPixbuf* icon = NULL;
+            if(gdk_rectangle_intersect(&area, &item->icon_rect, &tmp))
+                intersect = &tmp;
             else
-                intersect = &tmp2;
-        }
+                intersect = NULL;
 
-        if(intersect)
-        {
-            gtk_tree_model_get(model, &it, FM_FOLDER_MODEL_COL_ICON_WITH_THUMBNAIL, &icon, -1);
-            paint_item(self, item, cr, intersect, icon);
-            if(icon)
-                g_object_unref(icon);
+            if(gdk_rectangle_intersect(&area, &item->text_rect, &tmp2))
+            {
+                if(intersect)
+                    gdk_rectangle_union(intersect, &tmp2, intersect);
+                else
+                    intersect = &tmp2;
+            }
+
+            if(intersect)
+            {
+                gtk_tree_model_get(model, &it, FM_FOLDER_MODEL_COL_ICON_WITH_THUMBNAIL, &icon, -1);
+                paint_item(self, item, cr, intersect, icon);
+                if(icon)
+                    g_object_unref(icon);
+            }
         }
+        while(gtk_tree_model_iter_next(model, &it));
     }
-    while(gtk_tree_model_iter_next(model, &it));
+
 #if GTK_CHECK_VERSION(3, 0, 0)
     cairo_restore(cr);
 #else
@@ -1661,6 +1694,8 @@ static gboolean on_button_press(GtkWidget* w, GdkEventButton* evt)
             }
             else if(evt->button == 1)
             {
+                self->rubber_banding = TRUE;
+
                 /* disable Gtk+ DnD callbacks, because else rubberbanding will be interrupted */
                 gpointer drag_data = g_object_get_data(G_OBJECT(self),
                                         g_intern_static_string("gtk-site-data"));
@@ -1670,7 +1705,6 @@ static gboolean on_button_press(GtkWidget* w, GdkEventButton* evt)
                                                     G_SIGNAL_MATCH_DATA, 0, 0,
                                                     NULL, NULL, drag_data);
                 }
-                self->rubber_banding = TRUE;
 
                 /* FIXME: if you foward the event here, this will break rubber banding... */
                 /* forward the event to root window */
@@ -1682,10 +1716,19 @@ static gboolean on_button_press(GtkWidget* w, GdkEventButton* evt)
             }
         }
     }
-    else if(evt->type == GDK_2BUTTON_PRESS) /* activate items */
+    else if(evt->type == GDK_2BUTTON_PRESS)
     {
-        if(clicked_item && evt->button == 1)   /* left double click */
-            clicked = FM_FV_ACTIVATED;
+        if (evt->button == 1) /* left double click */
+        {
+            if (clicked_item)
+            {
+                clicked = FM_FV_ACTIVATED;
+            }
+            else
+            {
+                on_show_icons(NULL, NULL);
+            }
+        }
     }
 
     if(clicked != FM_FV_CLICK_NONE)
@@ -2279,6 +2322,11 @@ static void on_desktop_text_changed(FmConfig* cfg, FmDesktop* desktop)
     gtk_widget_queue_draw(GTK_WIDGET(desktop));
 }
 
+static void on_show_icons_changed(FmConfig* cfg, FmDesktop* desktop)
+{
+    gtk_widget_queue_draw(GTK_WIDGET(desktop));
+}
+
 static void on_desktop_icon_size_changed(FmConfig* cfg, FmDesktop* desktop)
 {
     if (desktop->model)
@@ -2394,6 +2442,7 @@ static void fm_desktop_destroy(GtkObject *object)
         g_signal_handlers_disconnect_by_func(screen, on_screen_size_changed, self);
         g_signal_handlers_disconnect_by_func(screen, on_screen_monitors_changed, self);
 
+        g_signal_handlers_disconnect_by_func(app_config, on_show_icons_changed, self);
         g_signal_handlers_disconnect_by_func(app_config, on_desktop_icon_size_changed, self);
         g_signal_handlers_disconnect_by_func(app_config, on_arrange_icons_rtl_changed, self);
         g_signal_handlers_disconnect_by_func(app_config, on_arrange_icons_in_rows_changed, self);
@@ -2518,6 +2567,7 @@ static GObject* fm_desktop_constructor(GType type, guint n_construct_properties,
                              fm_desktop_update_popup);
 
 
+    g_signal_connect(app_config, "changed::show_icons", G_CALLBACK(on_show_icons_changed), self);
     g_signal_connect(app_config, "changed::desktop_icon_size", G_CALLBACK(on_desktop_icon_size_changed), self);
     g_signal_connect(app_config, "changed::arrange_icons_rtl", G_CALLBACK(on_arrange_icons_rtl_changed), self);
     g_signal_connect(app_config, "changed::arrange_icons_in_rows", G_CALLBACK(on_arrange_icons_in_rows_changed), self);

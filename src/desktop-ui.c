@@ -25,14 +25,21 @@
 static const char desktop_menu_xml[]=
 "<popup>"
   "<placeholder name='CustomCommonOps'>"
+    "<menuitem action='ShowIcons'/>"
     "<menuitem action='DeskPref'/>"
   "</placeholder>"
 "</popup>";
+
+static const GtkToggleActionEntry desktop_toggle_actions[]=
+{
+    {"ShowIcons", GTK_STOCK_PROPERTIES, N_("Show Desktop _Icons"), "", NULL, G_CALLBACK(on_show_icons), FALSE}
+};
 
 static const GtkActionEntry desktop_actions[]=
 {
     {"DeskPref", GTK_STOCK_PROPERTIES, N_("Desktop Preferences"), "", NULL, G_CALLBACK(fm_desktop_preference)}
 };
+
 
 /* FmFileMenu extension for single folder */
 static const char folder_menu_xml[]=

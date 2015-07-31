@@ -78,6 +78,8 @@ struct _FmAppConfig
     gboolean show_wm_menu;
     GtkSortType desktop_sort_type;
     int desktop_sort_by;
+
+    gboolean show_icons;
 };
 
 struct _FmAppConfigClass
