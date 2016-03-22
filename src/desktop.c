@@ -2332,6 +2332,7 @@ static void on_desktop_icon_size_changed(FmConfig* cfg, FmDesktop* desktop)
     {
         fm_folder_model_set_icon_size(desktop->model, app_config->desktop_icon_size);
         gtk_widget_queue_resize(GTK_WIDGET(desktop));
+        queue_layout_items(desktop);
     }
 }
 
