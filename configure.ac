@@ -82,7 +82,7 @@ AC_ARG_WITH(gtk,
 
 # Checks for libraries.
 
-x11_modules="x11 sde-utils-x11-1.0 >= 0.1"
+x11_modules="x11 sde-utils-x11-0 >= 0.1"
 PKG_CHECK_MODULES(XLIB, [$x11_modules])
 AC_SUBST(XLIB_CFLAGS)
 AC_SUBST(XLIB_LIBS)
