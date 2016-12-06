@@ -23,6 +23,7 @@ if [ "x${ACLOCAL_DIR}" != "x" ]; then
   ACLOCAL_ARG=-I ${ACLOCAL_DIR}
 fi
 
+libtoolize
 ${ACLOCAL:-aclocal$AM_VERSION} ${ACLOCAL_ARG}
 ${AUTOHEADER:-autoheader$AC_VERSION} --force
 AUTOMAKE=$AUTOMAKE intltoolize -c --automake --force
