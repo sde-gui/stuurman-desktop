@@ -52,7 +52,7 @@ static char* profile = NULL;
 static gboolean show_desktop = TRUE;
 static gboolean desktop_off = FALSE;
 static gboolean desktop_running = FALSE;
-static gboolean desktop_pref = FALSE;
+static gboolean preferences = FALSE;
 static char* set_wallpaper = NULL;
 static char* wallpaper_mode = NULL;
 static char* ipc_cwd = NULL;
@@ -68,7 +68,7 @@ static GOptionEntry opt_entries[] =
     /* options that are acceptable for every instance of pcmanfm and will be passed through IPC. */
     /*{ "desktop", '\0', 0, G_OPTION_ARG_NONE, &show_desktop, N_("Launch desktop manager"), NULL },*/
     { "desktop-off", '\0', 0, G_OPTION_ARG_NONE, &desktop_off, N_("Turn off desktop manager if it's running"), NULL },
-    { "desktop-pref", '\0', 0, G_OPTION_ARG_NONE, &desktop_pref, N_("Open desktop preference dialog"), NULL },
+    { "preferences", '\0', 0, G_OPTION_ARG_NONE, &preferences, N_("Open desktop preference dialog"), NULL },
     { "set-wallpaper", 'w', 0, G_OPTION_ARG_FILENAME, &set_wallpaper, N_("Set desktop wallpaper from image FILE"), N_("FILE") },
                     /* don't translate list of modes in description, please */
     { "wallpaper-mode", '\0', 0, G_OPTION_ARG_STRING, &wallpaper_mode, N_("Set mode of desktop wallpaper. MODE=(color|stretch|fit|center|tile)"), N_("MODE") },
@@ -219,11 +219,11 @@ gboolean pcmanfm_run()
 {
     gboolean ret = TRUE;
 
-    if(desktop_pref)
+    if (preferences)
     {
         /* FIXME: pass screen number from client */
         fm_desktop_preference(NULL, GTK_WINDOW(fm_desktop_get(0, 0)));
-        desktop_pref = FALSE;
+        preferences = FALSE;
         return TRUE;
     }
 
