@@ -80,6 +80,9 @@ struct _FmDesktop
     guint cur_desktop;
     gint monitor;
     PangoFontDescription* font_desc;
+    GtkActionGroup* popup_act_grp; /* saved action group from fm_folder_view_add_popup(),
+    since the FM API doesn't currently allow to reference the UI manager directly
+    TODO: fix the API */
 };
 
 struct _FmDesktopClass

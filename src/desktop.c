@@ -1104,6 +1104,9 @@ static void fm_desktop_update_popup(FmFolderView* fv, GtkWindow* window,
 {
     GtkAction* act;
 
+    FmDesktop* desktop = FM_DESKTOP(fv);
+    desktop->popup_act_grp = act_grp;
+
     /* remove 'Rename' item and accelerator */
     act = gtk_action_group_get_action(act_grp, "Rename");
     gtk_action_set_visible(act, FALSE);
@@ -2323,6 +2326,12 @@ static void on_desktop_text_changed(FmConfig* cfg, FmDesktop* desktop)
 
 static void on_show_icons_changed(FmConfig* cfg, FmDesktop* desktop)
 {
+    if (desktop->popup_act_grp)
+    {
+        GtkAction * action = gtk_action_group_get_action(desktop->popup_act_grp, "ShowIcons");
+        gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(action), app_config->show_icons);
+    }
+
     gtk_widget_queue_draw(GTK_WIDGET(desktop));
 }
 
