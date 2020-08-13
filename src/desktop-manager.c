@@ -43,6 +43,9 @@
 
 #include "gseal-gtk-compat.h"
 
+GtkWindowGroup* win_group = NULL;
+FmFolder* desktop_folder = NULL;
+
 static guint wallpaper_changed;
 
 #define MAX_SCREENS  8

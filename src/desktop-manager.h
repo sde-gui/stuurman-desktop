@@ -36,8 +36,8 @@ void fm_desktop_manager_finalize();
 
 
 
-GtkWindowGroup* win_group;
-FmFolder* desktop_folder;
+extern GtkWindowGroup* win_group;
+extern FmFolder* desktop_folder;
 
 
 void unload_items(FmDesktop* desktop);
