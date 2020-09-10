@@ -1585,8 +1585,18 @@ static void on_size_allocate(GtkWidget* w, GtkAllocation* alloc)
     self->spacing = SPACING;
     self->xpad = self->ypad = PADDING;
     self->xmargin = self->ymargin = MARGIN;
-    self->text_h = font_h * 2;
+
+    /* FIXME: font_h * 2 doesn't give 2 lines in layout. Figure out how to do it properly */
+    /*self->text_h = font_h * 2;*/
+    self->text_h = font_h * 2.4;
+
+    /* Add more space for text, if icons are big enough */
+    self->text_h = MAX(self->text_h, app_config->desktop_icon_size * 0.2);
+
     self->text_w = 100;
+    /* Add more space for text, if icons are big enough */
+    self->text_w = MAX(self->text_w, app_config->desktop_icon_size * 1.2);
+
     self->pango_text_h = self->text_h * PANGO_SCALE;
     self->pango_text_w = self->text_w * PANGO_SCALE;
     self->text_h += 4;
