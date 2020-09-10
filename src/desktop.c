@@ -696,7 +696,7 @@ static void paint_item(FmDesktop* self, FmDesktopItem* item, cairo_t* cr, GdkRec
     paint_item_text(self, item, &item->cached_text, 0, cr);
     pango_layout_set_text(self->pl, NULL, 0);
 
-    if (item == self->focus)
+    if (item == self->focus && gtk_window_is_active((GtkWindow *) self))
     {
 #if GTK_CHECK_VERSION(3, 0, 0)
         gtk_render_focus(style, cr,
@@ -2082,14 +2082,14 @@ static gboolean on_focus_in(GtkWidget* w, GdkEventFocus* evt)
 {
     FmDesktop* self = (FmDesktop*) w;
     GtkTreeIter it;
-#if !GTK_CHECK_VERSION(2, 22, 0)
+/*#if !GTK_CHECK_VERSION(2, 22, 0)
     GTK_WIDGET_SET_FLAGS(w, GTK_HAS_FOCUS);
-#endif
+#endif*/
     if(!self->focus && gtk_tree_model_get_iter_first(GTK_TREE_MODEL(self->model), &it))
         self->focus = fm_folder_model_get_item_userdata(self->model, &it);
     if(self->focus)
         redraw_item(self, self->focus);
-    return FALSE;
+    return  GTK_WIDGET_CLASS(fm_desktop_parent_class)->focus_in_event(w, evt);
 }
 
 static gboolean on_focus_out(GtkWidget* w, GdkEventFocus* evt)
@@ -2097,12 +2097,12 @@ static gboolean on_focus_out(GtkWidget* w, GdkEventFocus* evt)
     FmDesktop* self = (FmDesktop*) w;
     if(self->focus)
     {
-#if !GTK_CHECK_VERSION(2, 22, 0)
+/*#if !GTK_CHECK_VERSION(2, 22, 0)
         GTK_WIDGET_UNSET_FLAGS(w, GTK_HAS_FOCUS);
-#endif
+#endif*/
         redraw_item(self, self->focus);
     }
-    return FALSE;
+    return  GTK_WIDGET_CLASS(fm_desktop_parent_class)->focus_out_event(w, evt);
 }
 
 /* ---- Drag & Drop support ---- */
