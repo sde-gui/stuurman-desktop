@@ -390,6 +390,43 @@ static GList* get_selected_items(FmDesktop* desktop, int* n_items)
 /* ---------------------------------------------------------------------
     Desktop drawing */
 
+static void calculate_item_metrics(FmDesktop* self)
+{
+    PangoContext* pc;
+    PangoFontMetrics *metrics;
+    int font_h;
+    pc = gtk_widget_get_pango_context((GtkWidget*)self);
+
+    metrics = pango_context_get_metrics(pc, NULL, NULL);
+
+    font_h = pango_font_metrics_get_ascent(metrics) + pango_font_metrics_get_descent (metrics);
+    pango_font_metrics_unref(metrics);
+
+    font_h /= PANGO_SCALE;
+
+    self->spacing = SPACING;
+    self->xpad = self->ypad = PADDING;
+    self->xmargin = self->ymargin = MARGIN;
+
+    /* FIXME: font_h * 2 doesn't give 2 lines in layout. Figure out how to do it properly */
+    /*self->text_h = font_h * 2;*/
+    self->text_h = font_h * 2.4;
+
+    /* Add more space for text, if icons are big enough */
+    self->text_h = MAX(self->text_h, app_config->desktop_icon_size * 0.2);
+
+    self->text_w = 100;
+    /* Add more space for text, if icons are big enough */
+    self->text_w = MAX(self->text_w, app_config->desktop_icon_size * 1.2);
+
+    self->pango_text_h = self->text_h * PANGO_SCALE;
+    self->pango_text_w = self->text_w * PANGO_SCALE;
+    self->text_h += 4;
+    self->text_w += 4; /* 4 is for drawing border */
+    self->cell_h = app_config->desktop_icon_size + self->spacing + self->text_h + self->ypad * 2;
+    self->cell_w = MAX((gint)self->text_w, app_config->desktop_icon_size) + self->xpad * 2;
+}
+
 static inline void get_item_rect(FmDesktopItem* item, GdkRectangle* rect)
 {
     gdk_rectangle_union(&item->icon_rect, &item->text_rect, rect);
@@ -418,6 +455,8 @@ static void layout_items(FmDesktop* self)
     GdkPixbuf* icon;
     GtkTreeIter it;
     int x, y;
+
+    calculate_item_metrics(self);
 
     int bottom_line = self->working_area.height - self->ymargin - self->cell_h;
     int right_line  = self->working_area.width - self->xmargin - self->cell_w;
@@ -1569,40 +1608,7 @@ static void on_size_allocate(GtkWidget* w, GtkAllocation* alloc)
 {
     FmDesktop* self = (FmDesktop*)w;
 
-    /* calculate item size */
-    PangoContext* pc;
-    PangoFontMetrics *metrics;
-    int font_h;
-    pc = gtk_widget_get_pango_context((GtkWidget*)self);
-
-    metrics = pango_context_get_metrics(pc, NULL, NULL);
-
-    font_h = pango_font_metrics_get_ascent(metrics) + pango_font_metrics_get_descent (metrics);
-    pango_font_metrics_unref(metrics);
-
-    font_h /= PANGO_SCALE;
-
-    self->spacing = SPACING;
-    self->xpad = self->ypad = PADDING;
-    self->xmargin = self->ymargin = MARGIN;
-
-    /* FIXME: font_h * 2 doesn't give 2 lines in layout. Figure out how to do it properly */
-    /*self->text_h = font_h * 2;*/
-    self->text_h = font_h * 2.4;
-
-    /* Add more space for text, if icons are big enough */
-    self->text_h = MAX(self->text_h, app_config->desktop_icon_size * 0.2);
-
-    self->text_w = 100;
-    /* Add more space for text, if icons are big enough */
-    self->text_w = MAX(self->text_w, app_config->desktop_icon_size * 1.2);
-
-    self->pango_text_h = self->text_h * PANGO_SCALE;
-    self->pango_text_w = self->text_w * PANGO_SCALE;
-    self->text_h += 4;
-    self->text_w += 4; /* 4 is for drawing border */
-    self->cell_h = app_config->desktop_icon_size + self->spacing + self->text_h + self->ypad * 2;
-    self->cell_w = MAX((gint)self->text_w, app_config->desktop_icon_size) + self->xpad * 2;
+    queue_layout_items(self);
 
     update_working_area(self);
     /* queue_layout_items(self); this is called in update_working_area */
@@ -2351,6 +2357,7 @@ static void on_desktop_icon_size_changed(FmConfig* cfg, FmDesktop* desktop)
     {
         fm_folder_model_set_icon_size(desktop->model, app_config->desktop_icon_size);
         gtk_widget_queue_resize(GTK_WIDGET(desktop));
+        desktop->pango_timestamp++;
         queue_layout_items(desktop);
     }
 }
