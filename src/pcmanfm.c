@@ -227,6 +227,7 @@ gboolean pcmanfm_run()
     if (check_running)
     {
         /* Do nothing. */
+        check_running = FALSE;
         return TRUE;
     }
 
