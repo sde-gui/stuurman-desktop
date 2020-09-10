@@ -50,6 +50,7 @@ static guint save_config_idle = 0;
 
 static char* profile = NULL;
 static gboolean show_desktop = TRUE;
+static gboolean check_running = FALSE;
 static gboolean desktop_off = FALSE;
 static gboolean desktop_running = FALSE;
 static gboolean preferences = FALSE;
@@ -67,6 +68,7 @@ static GOptionEntry opt_entries[] =
 
     /* options that are acceptable for every instance of pcmanfm and will be passed through IPC. */
     /*{ "desktop", '\0', 0, G_OPTION_ARG_NONE, &show_desktop, N_("Launch desktop manager"), NULL },*/
+    { "check-running", '\0', 0, G_OPTION_ARG_NONE, &check_running, N_("Check if an instance of stuurman-desktop is running. Exits with zero status if another copy stuurman-desktop is running."), NULL },
     { "desktop-off", '\0', 0, G_OPTION_ARG_NONE, &desktop_off, N_("Turn off desktop manager if it's running"), NULL },
     { "preferences", '\0', 0, G_OPTION_ARG_NONE, &preferences, N_("Open desktop preference dialog"), NULL },
     { "set-wallpaper", 'w', 0, G_OPTION_ARG_FILENAME, &set_wallpaper, N_("Set desktop wallpaper from image FILE"), N_("FILE") },
@@ -172,6 +174,9 @@ int main(int argc, char** argv)
     case SINGLE_INST_SERVER: ; /* FIXME */
     }
 
+    if (check_running)
+        return 1;
+
     if(pipe(signal_pipe) == 0)
     {
         GIOChannel* ch = g_io_channel_unix_new(signal_pipe[0]);
@@ -218,6 +223,12 @@ int main(int argc, char** argv)
 gboolean pcmanfm_run()
 {
     gboolean ret = TRUE;
+
+    if (check_running)
+    {
+        /* Do nothing. */
+        return TRUE;
+    }
 
     if (preferences)
     {
