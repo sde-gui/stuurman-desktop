@@ -663,7 +663,7 @@ static void paint_item_text(FmDesktop* self, FmDesktopItem* item, cached_layout_
 }
 
 
-static void paint_item(FmDesktop* self, FmDesktopItem* item, cairo_t* cr, GdkRectangle* expose_area, GdkPixbuf* icon)
+static void paint_item(FmDesktop* self, FmDesktopItem* item, cairo_t* cr, GdkRectangle* expose_area, GdkPixbuf* icon, gdouble item_opacity)
 {
 #if GTK_CHECK_VERSION(3, 0, 0)
     GtkStyleContext* style;
@@ -1001,6 +1001,45 @@ static void on_rows_reordered(FmFolderModel* model, GtkTreePath* parent_tp, GtkT
 
 /* ---------------------------------------------------------------------
     Events handlers */
+
+static gboolean transition_worker(FmDesktop* desktop)
+{
+    gboolean schedule_next_frame = FALSE;
+
+    if (app_config->show_icons)
+    {
+        if (desktop->show_icons_transition_current < desktop->show_icons_transition_interval)
+        {
+            desktop->show_icons_transition_current += desktop->transition_update_interval;
+            gtk_widget_queue_draw(GTK_WIDGET(desktop));
+            schedule_next_frame = TRUE;
+        }
+    }
+    else if (!app_config->show_icons)
+    {
+        if (desktop->show_icons_transition_current > 0)
+        {
+            desktop->show_icons_transition_current -= desktop->transition_update_interval;
+            gtk_widget_queue_draw(GTK_WIDGET(desktop));
+            schedule_next_frame = TRUE;
+        }
+    }
+
+    if (!schedule_next_frame)
+        desktop->transition_worker_handler_id = 0;
+    return schedule_next_frame;
+}
+
+static void start_transition(FmDesktop* desktop)
+{
+    if (!desktop->transition_worker_handler_id)
+    {
+        desktop->transition_worker_handler_id = g_timeout_add(
+            desktop->transition_update_interval,
+            (GSourceFunc) transition_worker,
+            (gpointer) desktop);
+    }
+}
 
 static void update_working_area(FmDesktop* desktop)
 {
@@ -1544,6 +1583,8 @@ static gboolean on_expose(GtkWidget* w, GdkEventExpose* evt)
     GtkTreeIter it;
     GdkRectangle area;
 
+    gdouble item_opacity = self->show_icons_transition_current / (gdouble) self->show_icons_transition_interval;
+
 #if GTK_CHECK_VERSION(3, 0, 0)
     if(G_UNLIKELY(!gtk_cairo_should_draw_window(cr, gtk_widget_get_window(w))))
         return FALSE;
@@ -1563,7 +1604,10 @@ static gboolean on_expose(GtkWidget* w, GdkEventExpose* evt)
     {
         if(self->rubber_banding)
             paint_rubber_banding_rect(self, cr, &area);
+    }
 
+    if (item_opacity > 0.0)
+    {
         if(gtk_tree_model_get_iter_first(model, &it)) do
         {
             FmDesktopItem* item = fm_folder_model_get_item_userdata(self->model, &it);
@@ -1587,7 +1631,7 @@ static gboolean on_expose(GtkWidget* w, GdkEventExpose* evt)
             if(intersect)
             {
                 gtk_tree_model_get(model, &it, FM_FOLDER_MODEL_COL_ICON_WITH_THUMBNAIL, &icon, -1);
-                paint_item(self, item, cr, intersect, icon);
+                paint_item(self, item, cr, intersect, icon, item_opacity);
                 if(icon)
                     g_object_unref(icon);
             }
@@ -2348,6 +2392,7 @@ static void on_show_icons_changed(FmConfig* cfg, FmDesktop* desktop)
         gtk_toggle_action_set_active(GTK_TOGGLE_ACTION(action), app_config->show_icons);
     }
 
+    start_transition(desktop);
     gtk_widget_queue_draw(GTK_WIDGET(desktop));
 }
 
@@ -2380,6 +2425,7 @@ static void on_folder_finish_loading(FmFolder* folder, FmDesktop* desktop)
 
     unload_items(desktop);
     load_items(desktop);
+    start_transition(desktop);
 }
 
 static FmJobErrorAction on_folder_error(FmFolder* folder, GError* err, FmJobErrorSeverity severity, FmDesktop* desktop)
@@ -2456,6 +2502,7 @@ static void fm_desktop_destroy(GtkObject *object)
     GdkScreen* screen;
 
     self = FM_DESKTOP(object);
+    /* FIXME: what exactly this bug #3533958 is? */
     if(self->model) /* see bug #3533958 by korzhpavel@SF */
     {
 
@@ -2487,8 +2534,12 @@ static void fm_desktop_destroy(GtkObject *object)
         g_object_unref(self->icon_render);
         g_object_unref(self->pl);
 
+        /* FIXME: rename all IDs as <something>_handler_id */
         if(self->single_click_timeout_handler)
             g_source_remove(self->single_click_timeout_handler);
+
+        if(self->transition_worker_handler_id)
+            g_source_remove(self->transition_worker_handler_id);
 
         if(self->idle_layout)
             g_source_remove(self->idle_layout);
@@ -2521,6 +2572,15 @@ static GObject* fm_desktop_constructor(GType type, guint n_construct_properties,
     guint i;
     gint n;
     GdkRectangle geom;
+
+    /* FIXME: currently disabled; not easy to implement now*/
+    const int MS_IN_S = 1000;
+    self->transition_worker_handler_id = 0;
+    self->transition_update_interval = 0.05 * MS_IN_S;
+    //self->show_icons_transition_interval = 1.0 * MS_IN_S;
+    self->show_icons_transition_interval = 0.05 * MS_IN_S;
+    self->show_icons_transition_current = 0;
+
 
     for(i = 0; i < n_construct_properties; i++)
         if(!strcmp(construct_properties[i].pspec->name, "monitor")

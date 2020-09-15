@@ -69,6 +69,12 @@ struct _FmDesktop
     gint rubber_banding_y;
     gint drag_start_x;
     gint drag_start_y;
+
+    guint transition_worker_handler_id;
+    gint transition_update_interval;
+    gint show_icons_transition_interval;
+    gint show_icons_transition_current;
+
     gboolean rubber_banding : 1;
     gboolean button_pressed : 1;
     gboolean dragging : 1;
