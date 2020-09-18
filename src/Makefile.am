@@ -30,6 +30,7 @@ stuurman_desktop_SOURCES = \
 	$(NULL)
 
 EXTRA_DIST= \
+	cell-placement-generator.h \
 	main-win-ui.c \
 	desktop-ui.c \
 	$(NULL)
