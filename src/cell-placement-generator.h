@@ -46,6 +46,11 @@ typedef struct {
     /* generated position */
     long x;
     long y;
+
+    /* internals */
+    long tier;
+    long _x;
+    long _y;
 } CellPlacementGenerator;
 
 static inline
@@ -59,7 +64,6 @@ void cell_placement_generator_set_bounding_box(CellPlacementGenerator * self,
     self->top_line = top_line;
     self->right_line = right_line;
     self->bottom_line = bottom_line;
-
 }
 
 static inline
@@ -86,18 +90,18 @@ static inline
 void cell_placement_generator_reset_x(CellPlacementGenerator * self)
 {
     if (self->arrange_rtl)
-        self->x = self->right_line - self->cell_w;
+        self->_x = self->right_line - self->cell_w;
     else
-        self->x = self->left_line;
+        self->_x = self->left_line;
 }
 
 static inline
 void cell_placement_generator_reset_y(CellPlacementGenerator * self)
 {
     if (self->arrange_btt)
-        self->y = self->bottom_line - self->cell_h;
+        self->_y = self->bottom_line - self->cell_h;
     else
-        self->y = self->top_line;
+        self->_y = self->top_line;
 }
 
 static inline
@@ -119,10 +123,32 @@ void cell_placement_generator_reset_axis2(CellPlacementGenerator * self)
 }
 
 static inline
+void cell_placement_generator_update_xy(CellPlacementGenerator * self)
+{
+    self->x = self->_x;
+    self->y = self->_y;
+    if (self->tier)
+    {
+        long x_div = 16;
+        long y_div = 24;
+        if (self->arrange_in_rows)
+        {
+            float t = x_div;
+            x_div = y_div;
+            y_div = t;
+        }
+        self->x += (1.0 + self->cell_w / x_div) * self->tier * (1 - 2 * self->arrange_rtl);
+        self->y += (1.0 + self->cell_h / y_div) * self->tier * (1 - 2 * self->arrange_btt);
+    }
+}
+
+static inline
 void cell_placement_generator_reset(CellPlacementGenerator * self)
 {
     cell_placement_generator_reset_x(self);
     cell_placement_generator_reset_y(self);
+    self->tier = 0;
+    cell_placement_generator_update_xy(self);
 }
 
 static inline
@@ -130,14 +156,14 @@ int cell_placement_generator_advance_x(CellPlacementGenerator * self)
 {
     if (self->arrange_rtl)
     {
-        self->x -= self->cell_w;
-        if (self->x < self->left_line)
+        self->_x -= self->cell_w;
+        if (self->_x < self->left_line)
             return 1;
     }
     else
     {
-        self->x += self->cell_w;
-        if (self->x > self->right_line - self->cell_w)
+        self->_x += self->cell_w;
+        if (self->_x > self->right_line - self->cell_w)
             return 1;
     }
 
@@ -149,14 +175,14 @@ int cell_placement_generator_advance_y(CellPlacementGenerator * self)
 {
     if (self->arrange_btt)
     {
-        self->y -= self->cell_h;
-        if (self->x < self->top_line)
+        self->_y -= self->cell_h;
+        if (self->_x < self->top_line)
             return 1;
     }
     else
     {
-        self->y += self->cell_h;
-        if (self->y > self->bottom_line - self->cell_h)
+        self->_y += self->cell_h;
+        if (self->_y > self->bottom_line - self->cell_h)
             return 1;
     }
 
@@ -188,8 +214,14 @@ void cell_placement_generator_advance(CellPlacementGenerator * self)
     if (cell_placement_generator_advance_axis1(self))
     {
         cell_placement_generator_reset_axis1(self);
-        cell_placement_generator_advance_axis2(self);
+        if (cell_placement_generator_advance_axis2(self))
+        {
+            cell_placement_generator_reset_axis2(self);
+            self->tier++;
+        }
     }
+
+    cell_placement_generator_update_xy(self);
 }
 
 G_END_DECLS
