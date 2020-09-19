@@ -997,6 +997,20 @@ static void update_working_area(FmDesktop* desktop)
 #if GTK_CHECK_VERSION(3, 4, 0)
     gdk_screen_get_monitor_workarea(screen, desktop->monitor, &result);
 #else
+    /*
+    FIXME: All this is WRONG.
+
+    _NET_WORKAREA is calculated diffently by different WMs (openbox vs icewm,
+    for example), and is not suitable for multimonitor configuration any way.
+
+    We have to manually enumerate top-level windows and check their
+    _NET_WM_STRUT and _NET_WM_STRUT_PARTIAL.
+
+    See also:
+    https://muktupavels.id.lv/posts/better-multi-monitor-support-in-gnome-flashback
+    */
+
+
     GdkWindow* root = gdk_screen_get_root_window(screen);
     Atom ret_type;
     gulong len, after;
