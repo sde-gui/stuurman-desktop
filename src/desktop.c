@@ -1719,7 +1719,9 @@ static gboolean on_button_press(GtkWidget* w, GdkEventButton* evt)
         {
             if(evt->button == GDK_RIGHT_BUTTON)  /* right click on the blank area => desktop popup menu */
             {
-                if(!app_config->show_wm_menu)
+                if (evt->state & GDK_CONTROL_MASK) /* always show menu if Ctrl is pressed... */
+                    clicked = FM_FV_CONTEXT_MENU;
+                else if (!app_config->show_wm_menu) /* ...else take the option in account  */
                     clicked = FM_FV_CONTEXT_MENU;
             }
             else if(evt->button == GDK_LEFT_BUTTON)
