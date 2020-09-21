@@ -1664,6 +1664,10 @@ static gboolean on_button_press(GtkWidget* w, GdkEventButton* evt)
 {
     //g_print("on_button_press\n");
 
+    const int GDK_LEFT_BUTTON = 1;
+    /*const int GDK_MIDDLE_BUTTON = 2;*/
+    const int GDK_RIGHT_BUTTON = 3;
+
     FmDesktop* self = (FmDesktop*)w;
     FmDesktopItem *item = NULL, *clicked_item = NULL;
     GtkTreeIter it;
@@ -1673,7 +1677,7 @@ static gboolean on_button_press(GtkWidget* w, GdkEventButton* evt)
 
     if(evt->type == GDK_BUTTON_PRESS)
     {
-        if(evt->button == 1)  /* left button */
+        if(evt->button == GDK_LEFT_BUTTON)
         {
             self->button_pressed = TRUE;    /* store button state for drag & drop */
             self->drag_start_x = evt->x;
@@ -1713,12 +1717,12 @@ static gboolean on_button_press(GtkWidget* w, GdkEventButton* evt)
         }
         else /* no item is clicked */
         {
-            if(evt->button == 3)  /* right click on the blank area => desktop popup menu */
+            if(evt->button == GDK_RIGHT_BUTTON)  /* right click on the blank area => desktop popup menu */
             {
                 if(!app_config->show_wm_menu)
                     clicked = FM_FV_CONTEXT_MENU;
             }
-            else if(evt->button == 1)
+            else if(evt->button == GDK_LEFT_BUTTON)
             {
                 self->rubber_banding = TRUE;
 
@@ -1744,7 +1748,7 @@ static gboolean on_button_press(GtkWidget* w, GdkEventButton* evt)
     }
     else if(evt->type == GDK_2BUTTON_PRESS)
     {
-        if (evt->button == 1) /* left double click */
+        if (evt->button == GDK_LEFT_BUTTON) /* left double click */
         {
             if (clicked_item)
             {
@@ -1769,7 +1773,7 @@ static gboolean on_button_press(GtkWidget* w, GdkEventButton* evt)
             gtk_tree_path_free(tp);
     }
     /* forward the event to root window */
-    else if(evt->button != 1)
+    else if(evt->button != GDK_LEFT_BUTTON)
         forward_event_to_rootwin(gtk_widget_get_screen(w), (GdkEvent*)evt);
 
     if(! gtk_widget_has_focus(w))
