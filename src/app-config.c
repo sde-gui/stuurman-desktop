@@ -81,7 +81,7 @@ static void fm_app_config_init(FmAppConfig *cfg)
 
     cfg->wallpaper_common = TRUE;
 
-    cfg->desktop_icon_size = 32;
+    cfg->desktop_icon_size = 48;
 
     cfg->show_icons = TRUE;
 }
