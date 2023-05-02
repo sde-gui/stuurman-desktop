@@ -9,7 +9,7 @@
     <property name="step_increment">1</property>
     <property name="page_increment">16</property>
   </object>
-  <object class="GtkListStore" id="liststore1">
+  <object class="GtkListStore" id="liststore_btt">
     <columns>
       <!-- column-name title -->
       <column type="gchararray"/>
@@ -18,16 +18,16 @@
     </columns>
     <data>
       <row>
-        <col id="0" translatable="yes">Left To Right</col>
+        <col id="0" translatable="yes">from Top to Bottom</col>
         <col id="1">0</col>
       </row>
       <row>
-        <col id="0" translatable="yes">Right To Left</col>
+        <col id="0" translatable="yes">from Bottom to Top</col>
         <col id="1">1</col>
       </row>
     </data>
   </object>
-  <object class="GtkListStore" id="liststore2">
+  <object class="GtkListStore" id="liststore_placement">
     <columns>
       <!-- column-name title -->
       <column type="gchararray"/>
@@ -36,11 +36,29 @@
     </columns>
     <data>
       <row>
-        <col id="0" translatable="yes">In Columns</col>
+        <col id="0" translatable="yes">in Columns</col>
         <col id="1">0</col>
       </row>
       <row>
-        <col id="0" translatable="yes">In Rows</col>
+        <col id="0" translatable="yes">in Rows</col>
+        <col id="1">1</col>
+      </row>
+    </data>
+  </object>
+  <object class="GtkListStore" id="liststore_rtl">
+    <columns>
+      <!-- column-name title -->
+      <column type="gchararray"/>
+      <!-- column-name value -->
+      <column type="guint"/>
+    </columns>
+    <data>
+      <row>
+        <col id="0" translatable="yes">from Left to Right</col>
+        <col id="1">0</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">from Right to Left</col>
         <col id="1">1</col>
       </row>
     </data>
@@ -459,10 +477,16 @@
                                   <object class="GtkTable" id="table1">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="n_rows">3</property>
+                                    <property name="n_rows">4</property>
                                     <property name="n_columns">3</property>
                                     <property name="column_spacing">6</property>
                                     <property name="row_spacing">5</property>
+                                    <child>
+                                      <placeholder/>
+                                    </child>
+                                    <child>
+                                      <placeholder/>
+                                    </child>
                                     <child>
                                       <placeholder/>
                                     </child>
@@ -479,7 +503,7 @@
                                       <object class="GtkComboBox" id="arrange_icons_rtl">
                                         <property name="visible">True</property>
                                         <property name="can_focus">False</property>
-                                        <property name="model">liststore1</property>
+                                        <property name="model">liststore_rtl</property>
                                         <child>
                                           <object class="GtkCellRendererText" id="cellrenderertext2"/>
                                           <attributes>
@@ -500,15 +524,15 @@
                                         <property name="label" translatable="yes">Placement:</property>
                                       </object>
                                       <packing>
-                                        <property name="top_attach">1</property>
-                                        <property name="bottom_attach">2</property>
+                                        <property name="top_attach">2</property>
+                                        <property name="bottom_attach">3</property>
                                       </packing>
                                     </child>
                                     <child>
                                       <object class="GtkComboBox" id="arrange_icons_in_rows">
                                         <property name="visible">True</property>
                                         <property name="can_focus">False</property>
-                                        <property name="model">liststore2</property>
+                                        <property name="model">liststore_placement</property>
                                         <child>
                                           <object class="GtkCellRendererText" id="cellrenderertext3"/>
                                           <attributes>
@@ -519,8 +543,8 @@
                                       <packing>
                                         <property name="left_attach">1</property>
                                         <property name="right_attach">2</property>
-                                        <property name="top_attach">1</property>
-                                        <property name="bottom_attach">2</property>
+                                        <property name="top_attach">2</property>
+                                        <property name="bottom_attach">3</property>
                                       </packing>
                                     </child>
                                     <child>
@@ -531,8 +555,8 @@
                                         <property name="label" translatable="yes">Icon size:</property>
                                       </object>
                                       <packing>
-                                        <property name="top_attach">2</property>
-                                        <property name="bottom_attach">3</property>
+                                        <property name="top_attach">3</property>
+                                        <property name="bottom_attach">4</property>
                                       </packing>
                                     </child>
                                     <child>
@@ -549,8 +573,8 @@
                                       <packing>
                                         <property name="left_attach">1</property>
                                         <property name="right_attach">2</property>
-                                        <property name="top_attach">2</property>
-                                        <property name="bottom_attach">3</property>
+                                        <property name="top_attach">3</property>
+                                        <property name="bottom_attach">4</property>
                                       </packing>
                                     </child>
                                     <child>
@@ -562,12 +586,31 @@
                                       <packing>
                                         <property name="left_attach">2</property>
                                         <property name="right_attach">3</property>
-                                        <property name="top_attach">2</property>
-                                        <property name="bottom_attach">3</property>
+                                        <property name="top_attach">3</property>
+                                        <property name="bottom_attach">4</property>
                                       </packing>
                                     </child>
                                     <child>
                                       <placeholder/>
+                                    </child>
+                                    <child>
+                                      <object class="GtkComboBox" id="arrange_icons_btt">
+                                        <property name="visible">True</property>
+                                        <property name="can_focus">False</property>
+                                        <property name="model">liststore_btt</property>
+                                        <child>
+                                          <object class="GtkCellRendererText" id="cellrenderertext4"/>
+                                          <attributes>
+                                            <attribute name="text">0</attribute>
+                                          </attributes>
+                                        </child>
+                                      </object>
+                                      <packing>
+                                        <property name="left_attach">1</property>
+                                        <property name="right_attach">2</property>
+                                        <property name="top_attach">1</property>
+                                        <property name="bottom_attach">2</property>
+                                      </packing>
                                     </child>
                                   </object>
                                   <packing>

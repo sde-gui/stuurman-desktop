@@ -166,6 +166,7 @@ void fm_app_config_load_from_key_file(FmAppConfig* cfg, GKeyFile* kf)
         cfg->desktop_sort_by = tmp_int;
 
     fm_key_file_get_bool(kf, "desktop", "arrange_icons_rtl", &cfg->arrange_icons_rtl);
+    fm_key_file_get_bool(kf, "desktop", "arrange_icons_btt", &cfg->arrange_icons_btt);
     fm_key_file_get_bool(kf, "desktop", "arrange_icons_in_rows", &cfg->arrange_icons_in_rows);
     fm_key_file_get_int(kf, "desktop", "desktop_icon_size", &cfg->desktop_icon_size);
     fm_key_file_get_bool(kf, "desktop", "show_icons", &cfg->show_icons);
@@ -243,6 +244,7 @@ void fm_app_config_save_profile(FmAppConfig* cfg, const char* name)
         g_string_append_printf(buf, "sort_type=%d\n", cfg->desktop_sort_type);
         g_string_append_printf(buf, "sort_by=%d\n", cfg->desktop_sort_by);
         g_string_append_printf(buf, "arrange_icons_rtl=%d\n", cfg->arrange_icons_rtl);
+        g_string_append_printf(buf, "arrange_icons_btt=%d\n", cfg->arrange_icons_btt);
         g_string_append_printf(buf, "arrange_icons_in_rows=%d\n", cfg->arrange_icons_in_rows);
         g_string_append_printf(buf, "desktop_icon_size=%d\n", cfg->desktop_icon_size);
         g_string_append_printf(buf, "show_icons=%d\n", cfg->show_icons);

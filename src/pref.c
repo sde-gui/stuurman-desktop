@@ -220,6 +220,7 @@ void fm_desktop_preference(GtkAction* act, GtkWindow* parent)
         INIT_BOOL(builder, FmAppConfig, show_wm_menu, NULL);
 
         INIT_COMBO(builder, FmAppConfig, arrange_icons_rtl, "arrange_icons_rtl");
+        INIT_COMBO(builder, FmAppConfig, arrange_icons_btt, "arrange_icons_btt");
         INIT_COMBO(builder, FmAppConfig, arrange_icons_in_rows, "arrange_icons_in_rows");
         INIT_INT(builder, FmAppConfig, desktop_icon_size, "desktop_icon_size");
 

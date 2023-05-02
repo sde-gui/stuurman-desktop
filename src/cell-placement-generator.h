@@ -176,7 +176,7 @@ int cell_placement_generator_advance_y(CellPlacementGenerator * self)
     if (self->arrange_btt)
     {
         self->_y -= self->cell_h;
-        if (self->_x < self->top_line)
+        if (self->_y < self->top_line)
             return 1;
     }
     else

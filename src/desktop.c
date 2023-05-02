@@ -480,7 +480,7 @@ static void layout_items(FmDesktop* self)
     cell_placement_generator_set_placement_rules(&cpg,
         app_config->arrange_icons_in_rows,
         app_config->arrange_icons_rtl,
-        0 /* TODO: app_config->arrange_icons_btt */
+        app_config->arrange_icons_btt
     );
 
     cell_placement_generator_reset(&cpg);
@@ -2089,6 +2089,12 @@ static void on_arrange_icons_rtl_changed(FmConfig* cfg, GtkWidget* w)
     queue_layout_items(self);
 }
 
+static void on_arrange_icons_btt_changed(FmConfig* cfg, GtkWidget* w)
+{
+    FmDesktop * self = (FmDesktop *) w;
+    queue_layout_items(self);
+}
+
 static void on_arrange_icons_in_rows_changed(FmConfig* cfg, GtkWidget* w)
 {
     FmDesktop * self = (FmDesktop *) w;
@@ -2487,6 +2493,7 @@ static void fm_desktop_destroy(GtkObject *object)
         g_signal_handlers_disconnect_by_func(app_config, on_show_icons_changed, self);
         g_signal_handlers_disconnect_by_func(app_config, on_desktop_icon_size_changed, self);
         g_signal_handlers_disconnect_by_func(app_config, on_arrange_icons_rtl_changed, self);
+        g_signal_handlers_disconnect_by_func(app_config, on_arrange_icons_btt_changed, self);
         g_signal_handlers_disconnect_by_func(app_config, on_arrange_icons_in_rows_changed, self);
         g_signal_handlers_disconnect_by_func(app_config, on_desktop_font_changed, self);
         g_signal_handlers_disconnect_by_func(app_config, on_desktop_text_changed, self);
@@ -2625,6 +2632,7 @@ static GObject* fm_desktop_constructor(GType type, guint n_construct_properties,
     g_signal_connect(app_config, "changed::show_icons", G_CALLBACK(on_show_icons_changed), self);
     g_signal_connect(app_config, "changed::desktop_icon_size", G_CALLBACK(on_desktop_icon_size_changed), self);
     g_signal_connect(app_config, "changed::arrange_icons_rtl", G_CALLBACK(on_arrange_icons_rtl_changed), self);
+    g_signal_connect(app_config, "changed::arrange_icons_btt", G_CALLBACK(on_arrange_icons_btt_changed), self);
     g_signal_connect(app_config, "changed::arrange_icons_in_rows", G_CALLBACK(on_arrange_icons_in_rows_changed), self);
     g_signal_connect(app_config, "changed::desktop_font", G_CALLBACK(on_desktop_font_changed), self);
     g_signal_connect(app_config, "changed::desktop_text", G_CALLBACK(on_desktop_text_changed), self);
