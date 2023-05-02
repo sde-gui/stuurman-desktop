@@ -15,11 +15,7 @@ Makefile.in*
 LINGUAS
 POTFILES
 stamp-*
-
 data/stuurman-desktop-preferences.desktop
 *.1
-*.ui
-data/ui/about.glade
 *.gmo
 src/stuurman-desktop
-src/xml-purge
