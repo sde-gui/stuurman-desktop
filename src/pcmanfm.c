@@ -68,7 +68,7 @@ static GOptionEntry opt_entries[] =
 
     /* options that are acceptable for every instance of pcmanfm and will be passed through IPC. */
     /*{ "desktop", '\0', 0, G_OPTION_ARG_NONE, &show_desktop, N_("Launch desktop manager"), NULL },*/
-    { "check-running", '\0', 0, G_OPTION_ARG_NONE, &check_running, N_("Check if an instance of stuurman-desktop is running. Exits with zero status if another copy stuurman-desktop is running."), NULL },
+    { "check-running", '\0', 0, G_OPTION_ARG_NONE, &check_running, N_("Check if an instance of stuurman-desktop is running. Exits with zero status if another copy of stuurman-desktop is running."), NULL },
     { "desktop-off", '\0', 0, G_OPTION_ARG_NONE, &desktop_off, N_("Turn off desktop manager if it's running"), NULL },
     { "preferences", '\0', 0, G_OPTION_ARG_NONE, &preferences, N_("Open desktop preference dialog"), NULL },
     { "set-wallpaper", 'w', 0, G_OPTION_ARG_FILENAME, &set_wallpaper, N_("Set desktop wallpaper from image FILE"), N_("FILE") },
