@@ -101,6 +101,7 @@ static FmFileInfoList* _dup_selected_files(FmFolderView* fv);
 static FmPathList* _dup_selected_file_paths(FmFolderView* fv);
 static void _select_all(FmFolderView* fv);
 static void _unselect_all(FmFolderView* fv);
+static void _select_invert(FmFolderView* fv);
 
 static void fm_desktop_view_init(FmFolderViewInterface* iface);
 
@@ -2875,7 +2876,14 @@ static FmPathList* _dup_selected_file_paths(FmFolderView* fv)
     return files;
 }
 
-static void _select_all(FmFolderView* fv)
+typedef enum
+{
+    SEL_ACTION_SELECT,
+    SEL_ACTION_UNSELECT,
+    SEL_ACTION_INVERT
+} select_action_t;
+
+static void _select_all_with_action(FmFolderView* fv, select_action_t sel_action)
 {
     FmDesktop* desktop = FM_DESKTOP(fv);
     GtkTreeIter it;
@@ -2886,38 +2894,40 @@ static void _select_all(FmFolderView* fv)
     {
         FmDesktopItem* item = fm_folder_model_get_item_userdata(desktop->model, &it);
         CONTINUE_IF_ITEM_IS_NULL(item);
-        if(!item->is_selected)
+        gboolean is_selected;
+        switch (sel_action){
+            case SEL_ACTION_SELECT:
+                is_selected = TRUE;
+                break;
+            case SEL_ACTION_UNSELECT:
+                is_selected = FALSE;
+                break;
+            case SEL_ACTION_INVERT:
+                is_selected = !item->is_selected;
+                break;
+        }
+        if(item->is_selected != is_selected)
         {
-            item->is_selected = TRUE;
+            item->is_selected = is_selected;
             redraw_item(desktop, item);
         }
     }
     while(gtk_tree_model_iter_next(model, &it));
+}
+
+static void _select_all(FmFolderView* fv)
+{
+    _select_all_with_action(fv, SEL_ACTION_SELECT);
 }
 
 static void _unselect_all(FmFolderView* fv)
 {
-    FmDesktop* desktop = FM_DESKTOP(fv);
-    GtkTreeIter it;
-    GtkTreeModel* model = GTK_TREE_MODEL(desktop->model);
-    if(!gtk_tree_model_get_iter_first(model, &it))
-        return;
-    do
-    {
-        FmDesktopItem* item = fm_folder_model_get_item_userdata(desktop->model, &it);
-        CONTINUE_IF_ITEM_IS_NULL(item);
-        if(item->is_selected)
-        {
-            item->is_selected = FALSE;
-            redraw_item(desktop, item);
-        }
-    }
-    while(gtk_tree_model_iter_next(model, &it));
+    _select_all_with_action(fv, SEL_ACTION_UNSELECT);
 }
 
 static void _select_invert(FmFolderView* fv)
 {
-    /* not implemented */
+    _select_all_with_action(fv, SEL_ACTION_INVERT);
 }
 
 static void _select_file_path(FmFolderView* fv, FmPath* path)
@@ -2951,7 +2961,7 @@ static void fm_desktop_view_init(FmFolderViewInterface* iface)
     iface->dup_selected_files = _dup_selected_files;
     iface->dup_selected_file_paths = _dup_selected_file_paths;
     iface->select_all = _select_all;
-    //iface->unselect_all = _unselect_all;
+    iface->unselect_all = _unselect_all;
     iface->select_invert = _select_invert;
     iface->select_file_path = _select_file_path;
     iface->get_custom_menu_callbacks = _get_custom_menu_callbacks;
