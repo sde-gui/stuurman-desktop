@@ -671,10 +671,32 @@ static void paint_item(FmDesktop* self, FmDesktopItem* item, cairo_t* cr, GdkRec
     else
     {
         /* the shadow */
+
+        float shadow_offset = 0;
+        float shadow_blur_radius = 0;
+
+        /* TODO: should user-configurable */
+
+        // Thin
+        //shadow_offset = 1.0;
+        //shadow_blur_radius = 0.0;
+
+        // Normal
+        shadow_offset = 1.0;
+        shadow_blur_radius = 0.7;
+
+        // Bold
+        //shadow_offset = 1.3;
+        //shadow_blur_radius = 1.5;
+
+        // Bold 2
+        //shadow_offset = 1.5;
+        //shadow_blur_radius = 2.0;
+
         gdk_cairo_set_source_color(cr, &app_config->desktop_shadow);
-        cairo_move_to(cr, text_x + 1, text_y + 1);
+        cairo_move_to(cr, text_x + shadow_offset, text_y + shadow_offset);
         //pango_cairo_show_layout(cr, self->pl);
-        paint_item_text(self, item, &item->cached_text_shadow, 0.7, cr);
+        paint_item_text(self, item, &item->cached_text_shadow, shadow_blur_radius, cr);
         gdk_cairo_set_source_color(cr, &app_config->desktop_fg);
     }
 
