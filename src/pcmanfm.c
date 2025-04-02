@@ -89,7 +89,7 @@ static void unix_signal_handler(int sig_num)
     /* postpond the signal handling by using a pipe */
     if (write(signal_pipe[1], &sig_num, sizeof(sig_num)) != sizeof(sig_num)) {
         g_critical("cannot bounce the signal, stop");
-        exit(2);
+        _exit(2);
     }
 }
 
