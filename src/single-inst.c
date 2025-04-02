@@ -25,6 +25,7 @@
 
 #include "single-inst.h"
 
+#include <fcntl.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -64,12 +65,25 @@ static void single_inst_client_free(SingleInstClient* client)
     /* g_debug("free client"); */
 }
 
+static int fd_is_valid(int fd)
+{
+    return fcntl(fd, F_GETFD) != -1 || errno != EBADF;
+}
+
 /* FIXME: need to document IPC protocol format */
 static void pass_args_to_existing_instance(const GOptionEntry* opt_entries, int screen_num, int sock)
 {
     const GOptionEntry* ent;
     FILE* f = fdopen(sock, "w");
     char* escaped;
+
+    if (!f)
+    {
+        perror("fdopen() failed");
+        if (fd_is_valid(sock))
+            close(sock);
+        return;
+    }
 
     /* pass cwd */
     char* cwd = g_get_current_dir();
@@ -159,6 +173,7 @@ static void pass_args_to_existing_instance(const GOptionEntry* opt_entries, int 
             break;
         }
     }
+
     fclose(f);
     g_free(cwd);
 }
@@ -198,7 +213,9 @@ SingleInstResult single_inst_init(SingleInstData* data)
     if(connect(data->sock, (struct sockaddr*)&addr, addr_len) == 0)
     {
         /* connected successfully, pass args in opt_entries to server process as argv and exit. */
-        pass_args_to_existing_instance(data->opt_entries, data->screen_num, data->sock);
+        int sock = data->sock;
+        data->sock = -1; /* pass_args_to_existing_instance()  */
+        pass_args_to_existing_instance(data->opt_entries, data->screen_num, sock);
         return SINGLE_INST_CLIENT;
     }
 
