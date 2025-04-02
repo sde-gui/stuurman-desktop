@@ -1687,9 +1687,9 @@ static gboolean on_button_press(GtkWidget* w, GdkEventButton* evt)
 {
     //g_print("on_button_press\n");
 
-    const int GDK_LEFT_BUTTON = 1;
-    /*const int GDK_MIDDLE_BUTTON = 2;*/
-    const int GDK_RIGHT_BUTTON = 3;
+    const guint GDK_LEFT_BUTTON = 1;
+    /*const guint GDK_MIDDLE_BUTTON = 2;*/
+    const guint GDK_RIGHT_BUTTON = 3;
 
     FmDesktop* self = (FmDesktop*)w;
     FmDesktopItem *item = NULL, *clicked_item = NULL;
