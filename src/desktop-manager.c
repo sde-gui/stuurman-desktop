@@ -62,7 +62,7 @@ static void on_wallpaper_changed(FmConfig* cfg, gpointer user_data)
         for (M = 0; M < MAX_MONITORS; M++)
         {
             if (desktop_slots[S][M])
-                wallpaper_manager_update_background(desktop_slots[S][M], M);
+                wallpaper_manager_update_background(desktop_slots[S][M], TRUE);
         }
     }
 }

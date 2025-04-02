@@ -43,17 +43,27 @@
 #include "gseal-gtk-compat.h"
 
 typedef struct _FmBackgroundCache FmBackgroundCache;
+typedef struct _FmBackgroundCacheParams FmBackgroundCacheParams;
+
+struct _FmBackgroundCacheParams
+{
+    char *filename;
+    FmWallpaperMode wallpaper_mode;
+    int dest_w;
+    int dest_h;
+    GdkColor desktop_bg;
+};
 
 struct _FmBackgroundCache
 {
     FmBackgroundCache *next;
-    char *filename;
+    int desktop_nr;
+    FmBackgroundCacheParams params;
 #if GTK_CHECK_VERSION(3, 0, 0)
     cairo_surface_t *bg;
 #else
     GdkPixmap *bg;
 #endif
-    FmWallpaperMode wallpaper_mode;
 };
 
 static Atom XA_NET_WORKAREA = 0;
@@ -64,104 +74,205 @@ static Atom XA_XROOTPMAP_ID = 0;
 
 static FmBackgroundCache* all_wallpapers = NULL;
 
+static const char * get_wallpaper_path(guint cur_desktop, gboolean on_wallpaper_changed)
+{
+    if (app_config->wallpaper_common)
+        return app_config->wallpaper;
 
-void wallpaper_manager_update_background(FmDesktop* desktop, int is_it)
+    const char *wallpaper_path;
+
+    if (on_wallpaper_changed) /* signal "changed::wallpaper" */
+    {
+        if ((gint)cur_desktop >= app_config->wallpapers_configured)
+        {
+            register int i;
+
+            app_config->wallpapers = g_renew(char *, app_config->wallpapers, cur_desktop + 1);
+            for(i = MAX(app_config->wallpapers_configured,0); i <= (gint)cur_desktop; i++)
+                app_config->wallpapers[i] = NULL;
+            app_config->wallpapers_configured = cur_desktop + 1;
+        }
+        wallpaper_path = app_config->wallpaper;
+        g_free(app_config->wallpapers[cur_desktop]);
+        app_config->wallpapers[cur_desktop] = g_strdup(wallpaper_path);
+    }
+    else /* desktop refresh */
+    {
+        if ((gint)cur_desktop < app_config->wallpapers_configured)
+            wallpaper_path = app_config->wallpapers[cur_desktop];
+        else
+            wallpaper_path = NULL;
+        if (app_config->wallpaper)
+        {
+            g_free(app_config->wallpaper); /* update to current desktop */
+        }
+        app_config->wallpaper = g_strdup(wallpaper_path);
+    }
+
+    return wallpaper_path;
+}
+
+static gboolean params_equal(const FmBackgroundCacheParams *a, const FmBackgroundCacheParams *b)
+{
+    if (a->wallpaper_mode != b->wallpaper_mode)
+        return FALSE;
+
+    if (memcmp(&a->desktop_bg, &b->desktop_bg, sizeof(a->desktop_bg)) != 0)
+        return FALSE;
+
+    switch(a->wallpaper_mode)
+    {
+    case FM_WP_COLOR:
+        break;
+    case FM_WP_TILE:
+        if (g_strcmp0(a->filename, b->filename) != 0)
+            return FALSE;
+        break;
+    default:
+        if (a->dest_w != b->dest_w)
+            return FALSE;
+        if (a->dest_h != b->dest_h)
+            return FALSE;
+        if (g_strcmp0(a->filename, b->filename) != 0)
+            return FALSE;
+        break;
+    }
+
+    return TRUE;
+}
+
+static void get_desktop_size(FmDesktop* desktop, int *w, int *h)
 {
     GtkWidget* widget = (GtkWidget*)desktop;
-    GdkPixbuf* pix, *scaled;
-    cairo_t* cr;
+    GdkScreen* screen = gtk_widget_get_screen(widget);
+    GdkRectangle geom;
+    gdk_screen_get_monitor_geometry(screen, desktop->monitor, &geom);
+    *w = geom.width;
+    *h = geom.height;
+}
+
+static FmBackgroundCache *lookup_cache(int desktop_nr)
+{
+    FmBackgroundCache *cache;
+    for (cache = all_wallpapers; cache; cache = cache->next)
+    {
+        if (cache->desktop_nr == desktop_nr)
+            break;
+    }
+
+    if (!cache)
+    {
+        cache = g_new0(FmBackgroundCache, 1);
+        cache->next = all_wallpapers;
+        all_wallpapers = cache;
+        cache->desktop_nr = desktop_nr;
+    }
+
+    return cache;
+}
+
+static void prepare_cached_background(FmBackgroundCache *cache, GdkWindow *window)
+{
+    GdkPixbuf* pix = gdk_pixbuf_new_from_file(cache->params.filename, NULL);
+    int src_w, src_h;
+    int dest_w, dest_h;
+    int x = 0, y = 0;
+    src_w = gdk_pixbuf_get_width(pix);
+    src_h = gdk_pixbuf_get_height(pix);
+    if (cache->params.wallpaper_mode == FM_WP_TILE)
+    {
+        dest_w = src_w;
+        dest_h = src_h;
+    }
+    else
+    {
+        dest_w = cache->params.dest_w;
+        dest_h = cache->params.dest_h;
+    }
+
+#if GTK_CHECK_VERSION(3, 0, 0)
+    cache->bg = cairo_image_surface_create(CAIRO_FORMAT_RGB24, dest_w, dest_h);
+    cairo_t* cr = cairo_create(cache->bg);
+#else
+    cache->bg = gdk_pixmap_new(window, dest_w, dest_h, -1);
+    cairo_t* cr = gdk_cairo_create(cache->bg);
+#endif
+    if (gdk_pixbuf_get_has_alpha(pix)
+       || app_config->wallpaper_mode == FM_WP_CENTER
+       || app_config->wallpaper_mode == FM_WP_FIT)
+    {
+        gdk_cairo_set_source_color(cr, &cache->params.desktop_bg);
+        cairo_rectangle(cr, 0, 0, dest_w, dest_h);
+        cairo_fill(cr);
+    }
+
+    switch(app_config->wallpaper_mode)
+    {
+        case FM_WP_TILE:
+            break;
+        case FM_WP_STRETCH:
+        {
+            GdkPixbuf *scaled;
+            if (dest_w == src_w && dest_h == src_h)
+                scaled = (GdkPixbuf*)g_object_ref(pix);
+            else
+                scaled = gdk_pixbuf_scale_simple(pix, dest_w, dest_h, GDK_INTERP_BILINEAR);
+            g_object_unref(pix);
+            pix = scaled;
+            break;
+        }
+        case FM_WP_FIT:
+        {
+            if (dest_w != src_w || dest_h != src_h)
+            {
+                gdouble w_ratio = (float)dest_w / src_w;
+                gdouble h_ratio = (float)dest_h / src_h;
+                gdouble ratio = MIN(w_ratio, h_ratio);
+                if(ratio != 1.0)
+                {
+                    src_w *= ratio;
+                    src_h *= ratio;
+                    GdkPixbuf *scaled = gdk_pixbuf_scale_simple(
+                        pix, src_w, src_h, GDK_INTERP_BILINEAR);
+                    g_object_unref(pix);
+                    pix = scaled;
+                }
+            }
+            x = (dest_w - src_w) / 2;
+            y = (dest_h - src_h) / 2;
+            break;
+        }
+        case FM_WP_CENTER:
+        {
+            x = (dest_w - src_w) / 2;
+            y = (dest_h - src_h) / 2;
+            break;
+        }
+        case FM_WP_COLOR: ; /* handled outside of this function */
+    }
+    gdk_cairo_set_source_pixbuf(cr, pix, x, y);
+    cairo_paint(cr);
+    cairo_destroy(cr);
+
+    if (pix)
+        g_object_unref(pix);
+}
+
+void wallpaper_manager_update_background(FmDesktop* desktop, gboolean on_wallpaper_changed)
+{
+    GtkWidget* widget = (GtkWidget*)desktop;
     GdkWindow* root = gdk_screen_get_root_window(gtk_widget_get_screen(widget));
     GdkWindow *window = gtk_widget_get_window(widget);
-    FmBackgroundCache *cache;
-#if GTK_CHECK_VERSION(3, 0, 0)
-    cairo_pattern_t *pattern;
-#endif
 
     Display* xdisplay;
     Pixmap xpixmap = 0;
     Window xroot;
     int screen_num;
 
-    char *wallpaper;
-
-    if (!app_config->wallpaper_common)
-    {
-        guint32 cur_desktop = desktop->cur_desktop;
-
-        if(is_it >= 0) /* signal "changed::wallpaper" */
-        {
-            if((gint)cur_desktop >= app_config->wallpapers_configured)
-            {
-                register int i;
-
-                app_config->wallpapers = g_renew(char *, app_config->wallpapers, cur_desktop + 1);
-                for(i = MAX(app_config->wallpapers_configured,0); i <= (gint)cur_desktop; i++)
-                    app_config->wallpapers[i] = NULL;
-                app_config->wallpapers_configured = cur_desktop + 1;
-            }
-            wallpaper = app_config->wallpaper;
-            g_free(app_config->wallpapers[cur_desktop]);
-            app_config->wallpapers[cur_desktop] = g_strdup(wallpaper);
-        }
-        else /* desktop refresh */
-        {
-            if((gint)cur_desktop < app_config->wallpapers_configured)
-                wallpaper = app_config->wallpapers[cur_desktop];
-            else
-                wallpaper = NULL;
-            if (app_config->wallpaper)
-            {
-                g_free(app_config->wallpaper); /* update to current desktop */
-            }
-            app_config->wallpaper = g_strdup(wallpaper);
-        }
-    }
-    else
-        wallpaper = app_config->wallpaper;
-
-    if(app_config->wallpaper_mode != FM_WP_COLOR && wallpaper && *wallpaper)
-    {
-        for(cache = all_wallpapers; cache; cache = cache->next)
-            if(strcmp(wallpaper, cache->filename) == 0)
-                break;
-        if(cache && cache->wallpaper_mode == app_config->wallpaper_mode)
-            pix = NULL; /* no new pix for it */
-        else if((pix = gdk_pixbuf_new_from_file(wallpaper, NULL)))
-        {
-            if(cache)
-            {
-                /* the same file but mode was changed */
-#if GTK_CHECK_VERSION(3, 0, 0)
-                cairo_surface_destroy(cache->bg);
-#else
-                g_object_unref(cache->bg);
-#endif
-                cache->bg = NULL;
-            }
-            else if(all_wallpapers)
-            {
-                for(cache = all_wallpapers; cache->next; )
-                    cache = cache->next;
-                cache->next = g_new0(FmBackgroundCache, 1);
-                cache = cache->next;
-            }
-            else
-                all_wallpapers = cache = g_new0(FmBackgroundCache, 1);
-            if(!cache->filename)
-                cache->filename = g_strdup(wallpaper);
-            g_debug("adding new FmBackgroundCache for %s", wallpaper);
-        }
-        else
-            /* if there is a cached image but with another mode and we cannot
-               get it from file for new mode then just leave it in cache as is */
-            cache = NULL;
-    }
-    else
-        cache = NULL;
-
-    if(!cache) /* solid color only */
+    if (app_config->wallpaper_mode == FM_WP_COLOR)
     {
 #if GTK_CHECK_VERSION(3, 0, 0)
+        cairo_pattern_t *pattern;
         pattern = cairo_pattern_create_rgb(app_config->desktop_bg.red / 65535.0,
                                            app_config->desktop_bg.green / 65535.0,
                                            app_config->desktop_bg.blue / 65535.0);
@@ -178,82 +289,38 @@ void wallpaper_manager_update_background(FmDesktop* desktop, int is_it)
         return;
     }
 
-    if(!cache->bg) /* no cached image found */
+    FmBackgroundCache *cache = lookup_cache(desktop->cur_desktop);
+
+    const char *wallpaper_path = get_wallpaper_path(desktop->cur_desktop, on_wallpaper_changed);
+    FmBackgroundCacheParams params;
+    params.filename = (char*) wallpaper_path;
+    params.wallpaper_mode = app_config->wallpaper_mode;
+    params.desktop_bg = app_config->desktop_bg;
+    get_desktop_size(desktop, &params.dest_w, &params.dest_h);
+
+    if (!params_equal(&cache->params, &params))
     {
-        int src_w, src_h;
-        int dest_w, dest_h;
-        int x = 0, y = 0;
-        src_w = gdk_pixbuf_get_width(pix);
-        src_h = gdk_pixbuf_get_height(pix);
-        if(app_config->wallpaper_mode == FM_WP_TILE)
+        /* the same file but mode was changed */
+        if (cache->bg)
         {
-            dest_w = src_w;
-            dest_h = src_h;
-        }
-        else
-        {
-            GdkScreen* screen = gtk_widget_get_screen(widget);
-            GdkRectangle geom;
-            gdk_screen_get_monitor_geometry(screen, desktop->monitor, &geom);
-            dest_w = geom.width;
-            dest_h = geom.height;
-        }
 #if GTK_CHECK_VERSION(3, 0, 0)
-        cache->bg = cairo_image_surface_create(CAIRO_FORMAT_RGB24, dest_w, dest_h);
-        cr = cairo_create(cache->bg);
+            cairo_surface_destroy(cache->bg);
 #else
-        cache->bg = gdk_pixmap_new(window, dest_w, dest_h, -1);
-        cr = gdk_cairo_create(cache->bg);
+            g_object_unref(cache->bg);
 #endif
-        if(gdk_pixbuf_get_has_alpha(pix)
-            || app_config->wallpaper_mode == FM_WP_CENTER
-            || app_config->wallpaper_mode == FM_WP_FIT)
-        {
-            gdk_cairo_set_source_color(cr, &app_config->desktop_bg);
-            cairo_rectangle(cr, 0, 0, dest_w, dest_h);
-            cairo_fill(cr);
+            cache->bg = NULL;
         }
 
-        switch(app_config->wallpaper_mode)
-        {
-        case FM_WP_TILE:
-            break;
-        case FM_WP_STRETCH:
-            if(dest_w == src_w && dest_h == src_h)
-                scaled = (GdkPixbuf*)g_object_ref(pix);
-            else
-                scaled = gdk_pixbuf_scale_simple(pix, dest_w, dest_h, GDK_INTERP_BILINEAR);
-            g_object_unref(pix);
-            pix = scaled;
-            break;
-        case FM_WP_FIT:
-            if(dest_w != src_w || dest_h != src_h)
-            {
-                gdouble w_ratio = (float)dest_w / src_w;
-                gdouble h_ratio = (float)dest_h / src_h;
-                gdouble ratio = MIN(w_ratio, h_ratio);
-                if(ratio != 1.0)
-                {
-                    src_w *= ratio;
-                    src_h *= ratio;
-                    scaled = gdk_pixbuf_scale_simple(pix, src_w, src_h, GDK_INTERP_BILINEAR);
-                    g_object_unref(pix);
-                    pix = scaled;
-                }
-            }
-            /* continue to execute code in case FM_WP_CENTER */
-        case FM_WP_CENTER:
-            x = (dest_w - src_w)/2;
-            y = (dest_h - src_h)/2;
-            break;
-        case FM_WP_COLOR: ; /* handled above */
-        }
-        gdk_cairo_set_source_pixbuf(cr, pix, x, y);
-        cairo_paint(cr);
-        cairo_destroy(cr);
-        cache->wallpaper_mode = app_config->wallpaper_mode;
+        g_free(cache->params.filename);
+        cache->params = params;
+        cache->params.filename = g_strdup(params.filename);
     }
+
+    if (!cache->bg) /* no cached image found */
+        prepare_cached_background(cache, window);
+
 #if GTK_CHECK_VERSION(3, 0, 0)
+    cairo_pattern_t *pattern;
     pattern = cairo_pattern_create_for_surface(cache->bg);
     gdk_window_set_background_pattern(window, pattern);
     cairo_pattern_destroy(pattern);
@@ -312,9 +379,6 @@ void wallpaper_manager_update_background(FmDesktop* desktop, int is_it)
     XFlush(xdisplay);
     XUngrabServer(xdisplay);
 
-    if(pix)
-        g_object_unref(pix);
-
     gdk_window_invalidate_rect(window, NULL, TRUE);
 }
 
@@ -348,7 +412,7 @@ void wallpaper_manager_finalize()
 #else
         g_object_unref(bg->bg);
 #endif
-        g_free(bg->filename);
+        g_free(bg->params.filename);
         g_free(bg);
     }
 }

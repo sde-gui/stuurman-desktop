@@ -1138,7 +1138,7 @@ static GdkFilterReturn on_root_event(GdkXEvent *xevent, GdkEvent *event, gpointe
             {
                 self->cur_desktop = (guint)desktop;
                 if(!app_config->wallpaper_common)
-                    wallpaper_manager_update_background(self, -1);
+                    wallpaper_manager_update_background(self, FALSE);
             }
         }
     }
@@ -1647,7 +1647,7 @@ static void on_size_allocate(GtkWidget* w, GtkAllocation* alloc)
     if(gtk_widget_get_realized(w))
     {
         if(app_config->wallpaper_mode != FM_WP_COLOR && app_config->wallpaper_mode != FM_WP_TILE)
-            wallpaper_manager_update_background(self, -1);
+            wallpaper_manager_update_background(self, FALSE);
     }
 
     GTK_WIDGET_CLASS(fm_desktop_parent_class)->size_allocate(w, alloc);
@@ -2133,7 +2133,7 @@ static void on_realize(GtkWidget* w)
     gtk_window_set_skip_taskbar_hint(GTK_WINDOW(w), TRUE);
     gtk_window_set_resizable((GtkWindow*)w, FALSE);
 
-    wallpaper_manager_update_background(self, -1);
+    wallpaper_manager_update_background(self, FALSE);
 }
 
 static gboolean on_focus_in(GtkWidget* w, GdkEventFocus* evt)

@@ -61,7 +61,7 @@ GType                fm_wallpaper_manager_get_type     (void);
 FmWallpaperManager*  fm_wallpaper_manager__new         (FmDesktop* desktop);
 #endif
 
-extern void wallpaper_manager_update_background(FmDesktop* desktop, int is_it);
+extern void wallpaper_manager_update_background(FmDesktop* desktop, gboolean on_wallpaper_changed);
 extern void wallpaper_manager_init();
 extern void wallpaper_manager_finalize();
 
