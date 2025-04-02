@@ -92,6 +92,20 @@ FmConfig *fm_app_config_new(void)
     return (FmConfig*)g_object_new(FM_APP_CONFIG_TYPE, NULL);
 }
 
+static void _key_file_get_color(
+    GKeyFile* key_file,
+    const gchar* group_name,
+    const gchar* key,
+    GdkColor *result)
+{
+    char* color_string = g_key_file_get_string(key_file, group_name, key, NULL);
+    if (color_string)
+    {
+        gdk_color_parse(color_string, result);
+        g_free(color_string);
+    }
+}
+
 void fm_app_config_load_from_key_file(FmAppConfig* cfg, GKeyFile* kf)
 {
     char* tmp;
@@ -132,24 +146,9 @@ void fm_app_config_load_from_key_file(FmAppConfig* cfg, GKeyFile* kf)
         cfg->wallpaper = tmp;
     }
 
-    tmp = g_key_file_get_string(kf, "desktop", "desktop_bg", NULL);
-    if(tmp)
-    {
-        gdk_color_parse(tmp, &cfg->desktop_bg);
-        g_free(tmp);
-    }
-    tmp = g_key_file_get_string(kf, "desktop", "desktop_fg", NULL);
-    if(tmp)
-    {
-        gdk_color_parse(tmp, &cfg->desktop_fg);
-        g_free(tmp);
-    }
-    tmp = g_key_file_get_string(kf, "desktop", "desktop_shadow", NULL);
-    if(tmp)
-    {
-        gdk_color_parse(tmp, &cfg->desktop_shadow);
-        g_free(tmp);
-    }
+    _key_file_get_color(kf, "desktop", "desktop_bg", &cfg->desktop_bg);
+    _key_file_get_color(kf, "desktop", "desktop_fg", &cfg->desktop_fg);
+    _key_file_get_color(kf, "desktop", "desktop_shadow", &cfg->desktop_shadow);
 
     tmp = g_key_file_get_string(kf, "desktop", "desktop_font", NULL);
     g_free(cfg->desktop_font);
