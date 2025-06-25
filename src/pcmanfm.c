@@ -198,7 +198,7 @@ int main(int argc, char** argv)
 
     fm_gtk_init(config);
     /* the main part */
-    if(pcmanfm_run(gdk_screen_get_number(gdk_screen_get_default())))
+    if(pcmanfm_run())
     {
         window_role = NULL; /* reset it for clients callbacks */
         gtk_main();
